@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { getEntries, getDaily } from "./lib/api";
+import { useEffect, useState } from "react";
+import { getEntries, getDaily, login, me } from "./lib/api";
 
 type Entry = Awaited<ReturnType<typeof getEntries>>[number];
 type Daily = Awaited<ReturnType<typeof getDaily>>;
+
+type Role = "employee" | "admin" | null;
 
 function fmt(t: string | null) {
   if (!t) return "-";
@@ -10,13 +12,66 @@ function fmt(t: string | null) {
   return d.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
 }
 
+function minutesToHM(min: number) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${h}時間${m}分`;
+}
+
 export default function App() {
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
+  const [role, setRole] = useState<Role>(null);
+  const [authErr, setAuthErr] = useState<string | null>(null);
+  const loggedIn = !!token;
+
   const [userId, setUserId] = useState(1);
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0,10)); // YYYY-MM-DD
   const [entries, setEntries] = useState<Entry[]>([]);
   const [daily, setDaily] = useState<Daily | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const [email, setEmail] = useState("demo@example.com");
+  const [password, setPassword] = useState("pass1234");
+  const [loginBusy, setLoginBusy] = useState(false);
+
+  // ログイン処理
+  async function doLogin(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      setLoginBusy(true);
+      setAuthErr(null);
+      const res = await login(email, password);
+      localStorage.setItem("token", res.token);
+      setToken(res.token);
+    } catch (e: any) {
+      setAuthErr(e?.message ?? "ログインに失敗しました");
+    } finally {
+      setLoginBusy(false);
+    }
+  }
+
+  // /auth/me でrole取得
+  useEffect(() => {
+    (async () => {
+      if (!loggedIn) {
+        setRole(null);
+        return;
+      }
+      try {
+        setAuthErr(null);
+        const u = await me(); // { id, email, name, role? }
+        // role が返ってこない古いAPIでも動くように既定値 employee
+        const r = (u as any).role as Role | undefined;
+        setRole(r ?? "employee");
+      } catch (e: any) {
+        setAuthErr("トークンが無効です。再ログインしてください。");
+        // 無効トークンなら破棄
+        localStorage.removeItem("token");
+        setToken(null);
+      }
+    })();
+  }, [loggedIn]);
 
   async function search() {
     try {
@@ -26,6 +81,67 @@ export default function App() {
     } catch (e:any) {
       setErr(e.message ?? "fetch failed");
     } finally { setLoading(false); }
+  }
+
+  function logout() {
+    localStorage.removeItem("token");
+    setToken(null);
+    setRole(null);
+    setEntries([]);
+    setDaily(null);
+  }
+
+  // 未ログイン：ログインカードを表示
+  if (!loggedIn) {
+    return (
+      <div style={{ maxWidth: 420, margin: "6rem auto", padding: 16 }}>
+        <h1>勤怠（管理者）ログイン</h1>
+        <form onSubmit={doLogin} style={{ marginTop: 16 }}>
+          <div>
+            <label>メール</label>
+            <br />
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="username"
+              style={{ width: "100%" }}
+            />
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <label>パスワード</label>
+            <br />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              style={{ width: "100%" }}
+            />
+          </div>
+          <button type="submit" disabled={loginBusy} style={{ marginTop: 12 }}>
+            {loginBusy ? "ログイン中…" : "ログイン"}
+          </button>
+        </form>
+        {authErr && <p style={{ color: "tomato", marginTop: 8 }}>{authErr}</p>}
+        <p style={{ marginTop: 12, fontSize: 12, opacity: 0.7 }}>
+          デモ：demo@example.com / pass1234
+        </p>
+      </div>
+    );
+  }
+
+  // ログイン済みだが admin 以外：閲覧禁止
+  if (role !== "admin") {
+    return (
+      <div style={{ maxWidth: 600, margin: "6rem auto", padding: 16 }}>
+        <h1>権限がありません</h1>
+        <p>管理者のみがこの画面にアクセスできます。</p>
+        <button onClick={logout} style={{ marginTop: 12 }}>
+          ログアウト
+        </button>
+        {authErr && <p style={{ color: "tomato", marginTop: 8 }}>{authErr}</p>}
+      </div>
+    );
   }
 
   return (
