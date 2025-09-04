@@ -31,8 +31,8 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const [email, setEmail] = useState("demo@example.com");
-  const [password, setPassword] = useState("pass1234");
+  const [email, setEmail] = useState("admin@example.com");
+  const [password, setPassword] = useState("adminpass");
   const [loginBusy, setLoginBusy] = useState(false);
 
   // ログイン処理
