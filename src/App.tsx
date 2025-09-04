@@ -146,7 +146,10 @@ export default function App() {
 
   return (
     <div style={{maxWidth:900,margin:"2rem auto",padding:16}}>
-      <h1>勤怠（管理者）</h1>
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1>勤怠（管理者）</h1>
+        <button onClick={logout}>ログアウト</button>
+      </header>
 
       <section style={{display:"flex",gap:12,alignItems:"end"}}>
         <div>
