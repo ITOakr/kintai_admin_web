@@ -3,7 +3,6 @@ import { getEntries, getDaily, login, me } from "./lib/api";
 
 type Entry = Awaited<ReturnType<typeof getEntries>>[number];
 type Daily = Awaited<ReturnType<typeof getDaily>>;
-
 type Role = "employee" | "admin" | null;
 
 function fmt(t: string | null) {
@@ -23,6 +22,8 @@ export default function App() {
   const [role, setRole] = useState<Role>(null);
   const [authErr, setAuthErr] = useState<string | null>(null);
   const loggedIn = !!token;
+
+  const [loadingRole, setLoadingRole] = useState(true);
 
   const [userId, setUserId] = useState(1);
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0,10)); // YYYY-MM-DD
@@ -53,25 +54,26 @@ export default function App() {
 
   // /auth/me でrole取得
   useEffect(() => {
-    (async () => {
-      if (!loggedIn) {
+      if (!token) {
         setRole(null);
+        setLoadingRole(false);
         return;
       }
-      try {
-        setAuthErr(null);
-        const u = await me(); // { id, email, name, role? }
-        // role が返ってこない古いAPIでも動くように既定値 employee
-        const r = (u as any).role as Role | undefined;
-        setRole(r ?? "employee");
-      } catch (e: any) {
-        setAuthErr("トークンが無効です。再ログインしてください。");
-        // 無効トークンなら破棄
+
+      setLoadingRole(true);
+      setAuthErr(null);
+      
+      me().then(user => {
+        setRole(user.role ?? "employee");
+      }).catch(() => {
+        setAuthErr("トークンが無効です。再度ログインしてください。");
         localStorage.removeItem("token");
         setToken(null);
-      }
-    })();
-  }, [loggedIn]);
+        setRole(null);
+      }).finally(() => {
+        setLoadingRole(false);
+    });
+  }, [token]);
 
   async function search() {
     try {
@@ -91,6 +93,9 @@ export default function App() {
     setDaily(null);
   }
 
+  if (loadingRole) {
+    return <div style={{padding:24}}><h2>権限を確認中...</h2></div>
+  }
   // 未ログイン：ログインカードを表示
   if (!loggedIn) {
     return (
