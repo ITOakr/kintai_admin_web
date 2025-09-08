@@ -99,3 +99,30 @@ export async function getLRatio(date: string) {
   if (!r.ok) throw new Error(`GET /v1/l_ratio/daily ${r.status}`);
   return r.json() as Promise<{ date: string; daily_sales: number | null; total_daily_wage: number; l_ratio: number | null }>;
 }
+
+// 月別 LRatio
+export async function getMonthlyLRatio(year: number, month: number) {
+  const BASE = import.meta.env.VITE_API_BASE_URL as string;
+  const t = localStorage.getItem("token");
+  const headers: Record<string, string> = t ? { Authorization: `Bearer ${t}` } : {};
+
+  const u = new URL(`${BASE}/v1/l_ratio/monthly`);
+  u.searchParams.set("year", String(year));
+  u.searchParams.set("month", String(month));
+
+  const r = await fetch(u.toString(), { headers });
+  if (!r.ok) throw new Error(`GET /v1/l_ratio/monthly ${r.status}`);
+  return r.json() as Promise<{
+    year: number;
+    month: number;
+    days: Array<{
+      date: string;
+      daily_sales: number | null;
+      total_daily_wage: number;
+      l_ratio: number | null;
+    }>;
+    monthly_sales: number | null;
+    monthly_wage: number;
+    monthly_l_ratio: number | null;
+  }>;
+}

@@ -4,6 +4,11 @@ import { me } from "./lib/api";
 import LoginPage from "./pages/LoginPage";
 import AdminHomePage from "./pages/AdminHomePage";
 import TimeEntrySearchPage from "./pages/TimeEntrySearchPage";
+import MonthlyPage from "./pages/MonthlyPage";
+
+import {
+  AppBar, Toolbar, Typography, Container, Button, Stack, Card, CardContent, CardActions
+} from "@mui/material";
 
 type Role = "employee" | "admin" | null;
 
@@ -17,13 +22,19 @@ function AdminRoute({ role }: { role: Role }) {
 // 権限エラーページを独立したコンポーネントとして定義
 function AuthErrorPage({ onLogout }: { onLogout: () => void }) {
   return (
-    <div style={{ maxWidth: 600, margin: "6rem auto", padding: 16 }}>
-      <h1>権限がありません</h1>
-      <p>管理者のみがこの画面にアクセスできます。</p>
-      <button onClick={onLogout} style={{ marginTop: 12 }}> 
-        ログアウト
-      </button>
-    </div>
+    <Container maxWidth="sm" sx={{ py: 8 }}>
+      <Card>
+        <CardContent>
+          <Typography variant="h5" gutterBottom>権限がありません</Typography>
+          <Typography color="text.secondary">
+            管理者のみがこの画面にアクセスできます。
+          </Typography>
+        </CardContent>
+        <CardActions sx={{ justifyContent: "flex-end" }}>
+          <Button variant="outlined" onClick={onLogout}>ログアウト</Button>
+        </CardActions>
+      </Card>
+    </Container>
   );
 }
 
@@ -67,7 +78,11 @@ export default function App() {
   }
 
   if (loadingRole) {
-    return <div style={{padding:24}}><h2>権限を確認中...</h2></div>
+    return (
+      <Container maxWidth="md" sx={{ py: 6 }}>
+        <Typography variant="h6">権限を確認中...</Typography>
+      </Container>
+    );
   }
 
   // 未ログイン：ログインカードを表示
@@ -75,13 +90,21 @@ export default function App() {
     <BrowserRouter>
       {/* ログイン済み管理者向けのヘッダー */}
       {token && role === "admin" && (
-        <header style={{ background: "#333", color: "white", padding: "8px 16px", display: "flex", alignItems: "center" }}>
-          <nav>
-            <Link to="/" style={{ color: "white", marginRight: 16 }}>ホーム</Link>
-            <Link to="/search" style={{ color: "white" }}>勤怠検索</Link>
-          </nav>
-          <button onClick={logout} style={{ marginLeft: "auto" }}>ログアウト</button>
-        </header>
+        <AppBar position ="sticky">
+          <Toolbar sx ={{ display: "flex", gap: 2 }}>
+            <Typography variant="h6" sx={{ mr: 2 }}>
+              勤怠管理（管理者）
+            </Typography>
+            <Stack direction="row" spacing={1}>
+              <Button color="inherit" component={Link} to="/">ホーム</Button>
+              <Button color="inherit" component={Link} to="/search">勤怠検索</Button>
+              <Button color="inherit" component={Link} to="/monthly">月次レポート</Button>
+            </Stack>
+            <Stack direction="row" sx={{ marginLeft: "auto" }}>
+              <Button color="inherit" onClick={logout}>ログアウト</Button>
+            </Stack>
+          </Toolbar>
+        </AppBar>
       )}
 
       <main>
@@ -95,8 +118,9 @@ export default function App() {
           } />
           {/* 管理者向けページ */}
           <Route element={<AdminRoute role={role} />}>
-            <Route path="/" element={<AdminHomePage />} />
-            <Route path="/search" element={<TimeEntrySearchPage />} />
+            <Route path="/" element={<Container maxWidth="lg" sx={{ py: 3 }}><AdminHomePage /></Container>} />
+            <Route path="/search" element={<Container maxWidth="lg" sx={{ py: 3 }}><TimeEntrySearchPage /></Container>} />
+            <Route path="/monthly" element={<Container maxWidth="lg" sx={{ py: 3 }}>< MonthlyPage /></Container>} />
           </Route>
 
           {/* 未ログイン時は/loginへ、ログイン済みで見つからないページは/へ */}
