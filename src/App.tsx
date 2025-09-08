@@ -1,56 +1,37 @@
 import { useEffect, useState } from "react";
-import { getEntries, getDaily, login, me } from "./lib/api";
+import { BrowserRouter, Routes, Route, Link, Navigate, Outlet } from "react-router-dom";
+import { me } from "./lib/api";
+import LoginPage from "./pages/LoginPage";
+import AdminHomePage from "./pages/AdminHomePage";
+import TimeEntrySearchPage from "./pages/TimeEntrySearchPage";
 
-type Entry = Awaited<ReturnType<typeof getEntries>>[number];
-type Daily = Awaited<ReturnType<typeof getDaily>>;
 type Role = "employee" | "admin" | null;
 
-function fmt(t: string | null) {
-  if (!t) return "-";
-  const d = new Date(t);
-  return d.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+function AdminRoute({ role }: { role: Role }) {
+  if (role !== "admin") {
+    return <Navigate to="/auth-error" replace />;
+  }
+  return <Outlet />;
 }
 
-function minutesToHM(min: number) {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return `${h}時間${m}分`;
+// 権限エラーページを独立したコンポーネントとして定義
+function AuthErrorPage({ onLogout }: { onLogout: () => void }) {
+  return (
+    <div style={{ maxWidth: 600, margin: "6rem auto", padding: 16 }}>
+      <h1>権限がありません</h1>
+      <p>管理者のみがこの画面にアクセスできます。</p>
+      <button onClick={onLogout} style={{ marginTop: 12 }}> 
+        ログアウト
+      </button>
+    </div>
+  );
 }
 
 export default function App() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
   const [role, setRole] = useState<Role>(null);
-  const [authErr, setAuthErr] = useState<string | null>(null);
-  const loggedIn = !!token;
-
   const [loadingRole, setLoadingRole] = useState(true);
-
-  const [userId, setUserId] = useState(1);
-  const [date, setDate] = useState<string>(new Date().toISOString().slice(0,10)); // YYYY-MM-DD
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [daily, setDaily] = useState<Daily | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  const [email, setEmail] = useState("admin@example.com");
-  const [password, setPassword] = useState("adminpass");
-  const [loginBusy, setLoginBusy] = useState(false);
-
-  // ログイン処理
-  async function doLogin(e: React.FormEvent) {
-    e.preventDefault();
-    try {
-      setLoginBusy(true);
-      setAuthErr(null);
-      const res = await login(email, password);
-      localStorage.setItem("token", res.token);
-      setToken(res.token);
-    } catch (e: any) {
-      setAuthErr(e?.message ?? "ログインに失敗しました");
-    } finally {
-      setLoginBusy(false);
-    }
-  }
+  const [authErr, setAuthErr] = useState<string | null>(null);
 
   // /auth/me でrole取得
   useEffect(() => {
@@ -61,146 +42,67 @@ export default function App() {
       }
 
       setLoadingRole(true);
-      setAuthErr(null);
       
       me().then(user => {
-        setRole(user.role ?? "employee");
-      }).catch(() => {
-        setAuthErr("トークンが無効です。再度ログインしてください。");
+        setRole(user.role ?? null);
+      }).catch(e => {
+        setAuthErr(e.message ?? "トークンが無効です。再度ログインしてください。");
         localStorage.removeItem("token");
         setToken(null);
-        setRole(null);
       }).finally(() => {
         setLoadingRole(false);
     });
   }, [token]);
 
-  async function search() {
-    try {
-      setLoading(true); setErr(null);
-      const [e, d] = await Promise.all([getEntries(userId, date), getDaily(userId, date)]);
-      setEntries(e); setDaily(d);
-    } catch (e:any) {
-      setErr(e.message ?? "fetch failed");
-    } finally { setLoading(false); }
+  function handleLoginSuccess(newToken: string) {
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
+    setAuthErr(null);
   }
 
   function logout() {
     localStorage.removeItem("token");
     setToken(null);
     setRole(null);
-    setEntries([]);
-    setDaily(null);
   }
 
   if (loadingRole) {
     return <div style={{padding:24}}><h2>権限を確認中...</h2></div>
   }
+
   // 未ログイン：ログインカードを表示
-  if (!loggedIn) {
-    return (
-      <div style={{ maxWidth: 420, margin: "6rem auto", padding: 16 }}>
-        <h1>勤怠（管理者）ログイン</h1>
-        <form onSubmit={doLogin} style={{ marginTop: 16 }}>
-          <div>
-            <label>メール</label>
-            <br />
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="username"
-              style={{ width: "100%" }}
-            />
-          </div>
-          <div style={{ marginTop: 8 }}>
-            <label>パスワード</label>
-            <br />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              style={{ width: "100%" }}
-            />
-          </div>
-          <button type="submit" disabled={loginBusy} style={{ marginTop: 12 }}>
-            {loginBusy ? "ログイン中…" : "ログイン"}
-          </button>
-        </form>
-        {authErr && <p style={{ color: "tomato", marginTop: 8 }}>{authErr}</p>}
-        <p style={{ marginTop: 12, fontSize: 12, opacity: 0.7 }}>
-          デモ：demo@example.com / pass1234
-        </p>
-      </div>
-    );
-  }
-
-  // ログイン済みだが admin 以外：閲覧禁止
-  if (role !== "admin") {
-    return (
-      <div style={{ maxWidth: 600, margin: "6rem auto", padding: 16 }}>
-        <h1>権限がありません</h1>
-        <p>管理者のみがこの画面にアクセスできます。</p>
-        <button onClick={logout} style={{ marginTop: 12 }}>
-          ログアウト
-        </button>
-        {authErr && <p style={{ color: "tomato", marginTop: 8 }}>{authErr}</p>}
-      </div>
-    );
-  }
-
   return (
-    <div style={{maxWidth:900,margin:"2rem auto",padding:16}}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>勤怠（管理者）</h1>
-        <button onClick={logout}>ログアウト</button>
-      </header>
+    <BrowserRouter>
+      {/* ログイン済み管理者向けのヘッダー */}
+      {token && role === "admin" && (
+        <header style={{ background: "#333", color: "white", padding: "8px 16px", display: "flex", alignItems: "center" }}>
+          <nav>
+            <Link to="/" style={{ color: "white", marginRight: 16 }}>ホーム</Link>
+            <Link to="/search" style={{ color: "white" }}>勤怠検索</Link>
+          </nav>
+          <button onClick={logout} style={{ marginLeft: "auto" }}>ログアウト</button>
+        </header>
+      )}
 
-      <section style={{display:"flex",gap:12,alignItems:"end"}}>
-        <div>
-          <label>ユーザーID</label><br/>
-          <input type="number" value={userId} onChange={e=>setUserId(Number(e.target.value))} />
-        </div>
-        <div>
-          <label>日付</label><br/>
-          <input type="date" value={date} onChange={e=>setDate(e.target.value)} />
-        </div>
-        <button onClick={search} disabled={loading}>検索</button>
-      </section>
+      <main>
+        <Routes>
+          {/* ログインページ: /login */}
+          <Route path="/login" element={
+            token ? <Navigate to="/" replace /> : <LoginPage onLoginSuccess={handleLoginSuccess} initialError={authErr} />
+          } />
+          <Route path="/auth-error" element={
+            token ? <AuthErrorPage onLogout={logout} /> : <Navigate to="/login" replace />
+          } />
+          {/* 管理者向けページ */}
+          <Route element={<AdminRoute role={role} />}>
+            <Route path="/" element={<AdminHomePage />} />
+            <Route path="/search" element={<TimeEntrySearchPage />} />
+          </Route>
 
-      {err && <p style={{color:"tomato"}}>{err}</p>}
-
-      <section style={{marginTop:16,padding:12,border:"1px solid #ddd",borderRadius:8}}>
-        <h3>日次サマリ</h3>
-        {daily ? (
-          <ul>
-            <li>status: <b>{daily.status}</b></li>
-            <li>start: {fmt(daily.actual.start)}</li>
-            <li>end: {fmt(daily.actual.end)}</li>
-            <li>work: {daily.totals.work} 分 / break: {daily.totals.break} 分</li>
-          </ul>
-        ) : <p>未取得</p>}
-      </section>
-
-      <section style={{marginTop:16}}>
-        <h3>打刻一覧</h3>
-        <table width="100%" cellPadding={6} style={{borderCollapse:"collapse"}}>
-          <thead>
-            <tr><th align="left">ID</th><th align="left">種別</th><th align="left">時刻</th><th align="left">source</th></tr>
-          </thead>
-          <tbody>
-            {entries.map(e=>(
-              <tr key={e.id} style={{borderTop:"1px solid #eee"}}>
-                <td>{e.id}</td>
-                <td>{e.kind}</td>
-                <td>{fmt(e.happened_at)}</td>
-                <td>{e.source}</td>
-              </tr>
-            ))}
-            {entries.length===0 && <tr><td colSpan={4}>データなし</td></tr>}
-          </tbody>
-        </table>
-      </section>
-    </div>
+          {/* 未ログイン時は/loginへ、ログイン済みで見つからないページは/へ */}
+          <Route path="*" element={<Navigate to={token ? "/" : "/login"} replace />} />
+        </Routes>
+      </main>
+    </BrowserRouter>
   );
 }
