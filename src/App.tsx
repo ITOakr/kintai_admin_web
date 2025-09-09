@@ -119,9 +119,9 @@ export default function App() {
             } />
             {/* 管理者向けページ */}
             <Route element={<AdminRoute role={role} />}>
-              <Route path="/" element={<Container maxWidth="lg" sx={{ py: 3 }}><AdminHomePage /></Container>} />
-              <Route path="/search" element={<Container maxWidth="lg" sx={{ py: 3 }}><TimeEntrySearchPage /></Container>} />
-              <Route path="/monthly" element={<Container maxWidth="lg" sx={{ py: 3 }}>< MonthlyPage /></Container>} />
+              <Route path="/" element={<Container maxWidth="xl" sx={{ py: 3 }}><AdminHomePage /></Container>} />
+              <Route path="/search" element={<Container maxWidth="xl" sx={{ py: 3 }}><TimeEntrySearchPage /></Container>} />
+              <Route path="/monthly" element={<Container maxWidth="xl" sx={{ py: 3 }}>< MonthlyPage /></Container>} />
             </Route>
 
             {/* 未ログイン時は/loginへ、ログイン済みで見つからないページは/へ */}
