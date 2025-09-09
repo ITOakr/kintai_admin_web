@@ -7,7 +7,7 @@ import TimeEntrySearchPage from "./pages/TimeEntrySearchPage";
 import MonthlyPage from "./pages/MonthlyPage";
 
 import {
-  AppBar, Toolbar, Typography, Container, Button, Stack, Card, CardContent, CardActions
+  AppBar, Toolbar, Typography, Container, Button, Stack, Card, CardContent, CardActions, Box
 } from "@mui/material";
 
 type Role = "employee" | "admin" | null;
@@ -88,45 +88,47 @@ export default function App() {
   // 未ログイン：ログインカードを表示
   return (
     <BrowserRouter>
-      {/* ログイン済み管理者向けのヘッダー */}
-      {token && role === "admin" && (
-        <AppBar position ="sticky">
-          <Toolbar sx ={{ display: "flex", gap: 2 }}>
-            <Typography variant="h6" sx={{ mr: 2 }}>
-              勤怠管理（管理者）
-            </Typography>
-            <Stack direction="row" spacing={1}>
-              <Button color="inherit" component={Link} to="/">ホーム</Button>
-              <Button color="inherit" component={Link} to="/search">勤怠検索</Button>
-              <Button color="inherit" component={Link} to="/monthly">月次レポート</Button>
-            </Stack>
-            <Stack direction="row" sx={{ marginLeft: "auto" }}>
-              <Button color="inherit" onClick={logout}>ログアウト</Button>
-            </Stack>
-          </Toolbar>
-        </AppBar>
-      )}
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        {/* ログイン済み管理者向けのヘッダー */}
+        {token && role === "admin" && (
+          <AppBar position ="sticky">
+            <Toolbar sx ={{ display: "flex", gap: 2 }}>
+              <Typography variant="h6" sx={{ mr: 2 }}>
+                勤怠管理（管理者）
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                <Button color="inherit" component={Link} to="/">ホーム</Button>
+                <Button color="inherit" component={Link} to="/search">勤怠検索</Button>
+                <Button color="inherit" component={Link} to="/monthly">月次レポート</Button>
+              </Stack>
+              <Stack direction="row" sx={{ marginLeft: "auto" }}>
+                <Button color="inherit" onClick={logout}>ログアウト</Button>
+              </Stack>
+            </Toolbar>
+          </AppBar>
+        )}
 
-      <main>
-        <Routes>
-          {/* ログインページ: /login */}
-          <Route path="/login" element={
-            token ? <Navigate to="/" replace /> : <LoginPage onLoginSuccess={handleLoginSuccess} initialError={authErr} />
-          } />
-          <Route path="/auth-error" element={
-            token ? <AuthErrorPage onLogout={logout} /> : <Navigate to="/login" replace />
-          } />
-          {/* 管理者向けページ */}
-          <Route element={<AdminRoute role={role} />}>
-            <Route path="/" element={<Container maxWidth="lg" sx={{ py: 3 }}><AdminHomePage /></Container>} />
-            <Route path="/search" element={<Container maxWidth="lg" sx={{ py: 3 }}><TimeEntrySearchPage /></Container>} />
-            <Route path="/monthly" element={<Container maxWidth="lg" sx={{ py: 3 }}>< MonthlyPage /></Container>} />
-          </Route>
+        <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+          <Routes>
+            {/* ログインページ: /login */}
+            <Route path="/login" element={
+              token ? <Navigate to="/" replace /> : <LoginPage onLoginSuccess={handleLoginSuccess} initialError={authErr} />
+            } />
+            <Route path="/auth-error" element={
+              token ? <AuthErrorPage onLogout={logout} /> : <Navigate to="/login" replace />
+            } />
+            {/* 管理者向けページ */}
+            <Route element={<AdminRoute role={role} />}>
+              <Route path="/" element={<Container maxWidth="lg" sx={{ py: 3 }}><AdminHomePage /></Container>} />
+              <Route path="/search" element={<Container maxWidth="lg" sx={{ py: 3 }}><TimeEntrySearchPage /></Container>} />
+              <Route path="/monthly" element={<Container maxWidth="lg" sx={{ py: 3 }}>< MonthlyPage /></Container>} />
+            </Route>
 
-          {/* 未ログイン時は/loginへ、ログイン済みで見つからないページは/へ */}
-          <Route path="*" element={<Navigate to={token ? "/" : "/login"} replace />} />
-        </Routes>
-      </main>
+            {/* 未ログイン時は/loginへ、ログイン済みで見つからないページは/へ */}
+            <Route path="*" element={<Navigate to={token ? "/" : "/login"} replace />} />
+          </Routes>
+        </Box>
+      </Box>
     </BrowserRouter>
   );
 }
