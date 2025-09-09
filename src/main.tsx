@@ -18,7 +18,7 @@ const theme = createTheme({
   },
   typography: {
     // 日本語の見た目を整えたい場合は後で Noto Sans JP に差し替え可能
-    fontFamily: ['"Roboto"', "Helvetica", "Arial", "sans-serif"].join(","),
+    fontFamily: ['"Roboto"',"Noto Sans JP", "Helvetica", "Arial", "sans-serif"].join(","),
   },
 });
 
