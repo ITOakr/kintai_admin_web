@@ -77,6 +77,15 @@ export async function getSales(date: string) {
   return r.json() as Promise<{ date: string; amount_yen: number | null; note: string | null }>;
 }
 
+// 食材費の取得/保存（管理者）
+export async function getFoodCosts(date: string) {
+  const u = new URL(`${BASE}/v1/food_costs`);
+  u.searchParams.set("date", date);
+  const r = await fetch(u.toString(), { headers: authHeader() });
+  if (!r.ok) throw new Error(`GET /v1/food_costs ${r.status}`);
+  return r.json() as Promise<{ date: string; amount_yen: number | null; note: string | null }>;
+}
+
 export async function putSales(date: string, amount_yen: number, note?: string) {
   const u = new URL(`${BASE}/v1/sales`);
   u.searchParams.set("date", date);
@@ -91,6 +100,20 @@ export async function putSales(date: string, amount_yen: number, note?: string) 
   return r.json() as Promise<{ id: number; date: string; amount_yen: number; note?: string | null }>;
 }
 
+export async function putFoodCosts(date: string, amount_yen: number, note?: string) {
+  const u = new URL(`${BASE}/v1/food_costs`);
+  u.searchParams.set("date", date);
+  const body = new URLSearchParams({ amount_yen: String(amount_yen) });
+  if (note) body.set("note", note);
+  const r = await fetch(u.toString(), {
+    method: "PUT",
+    headers: { ...authHeader(), "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+    body,
+  });
+  if (!r.ok) throw new Error(`PUT /v1/food_costs ${r.status}`);
+  return r.json() as Promise<{ id: number; date: string; amount_yen: number; note?: string | null }>;
+}
+
 // LRatio（管理者）
 export async function getLRatio(date: string) {
   const u = new URL(`${BASE}/v1/l_ratio/daily`);
@@ -100,7 +123,7 @@ export async function getLRatio(date: string) {
   return r.json() as Promise<{ date: string; daily_sales: number | null; total_daily_wage: number; l_ratio: number | null }>;
 }
 
-// 月別 LRatio
+// 月次 LRatio
 export async function getMonthlyLRatio(year: number, month: number) {
   const BASE = import.meta.env.VITE_API_BASE_URL as string;
   const t = localStorage.getItem("token");
@@ -124,5 +147,41 @@ export async function getMonthlyLRatio(year: number, month: number) {
     monthly_sales: number | null;
     monthly_wage: number;
     monthly_l_ratio: number | null;
+  }>;
+}
+
+// FRatio（管理者）
+export async function getFRatio(date: string) {
+  const u = new URL(`${BASE}/v1/f_ratio/daily`);
+  u.searchParams.set("date", date);
+  const r = await fetch(u.toString(), { headers: authHeader() });
+  if (!r.ok) throw new Error(`GET /v1/f_ratio/daily ${r.status}`);
+  return r.json() as Promise<{ date: string; daily_sales: number | null; daily_food_cost: number; f_ratio: number | null }>;
+}
+
+// 月次 FRatio
+export async function getMonthlyFRatio(year: number, month: number) {
+  const BASE = import.meta.env.VITE_API_BASE_URL as string;
+  const t = localStorage.getItem("token");
+  const headers: Record<string, string> = t ? { Authorization: `Bearer ${t}` } : {};
+
+  const u = new URL(`${BASE}/v1/f_ratio/monthly`);
+  u.searchParams.set("year", String(year));
+  u.searchParams.set("month", String(month));
+
+  const r = await fetch(u.toString(), { headers });
+  if (!r.ok) throw new Error(`GET /v1/f_ratio/monthly ${r.status}`);
+  return r.json() as Promise<{
+    year: number;
+    month: number;
+    days: Array<{
+      date: string;
+      daily_sales: number | null;
+      daily_food_cost: number;
+      f_ratio: number | null;
+    }>;
+    monthly_sales: number | null;
+    monthly_food_cost: number;
+    monthly_f_ratio: number | null;
   }>;
 }
