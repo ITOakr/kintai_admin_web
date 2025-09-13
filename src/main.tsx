@@ -10,11 +10,18 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
+// ▼▼▼ Noto Sans JP フォントを追加 ▼▼▼
+import "@fontsource/noto-sans-jp/400.css"; // Regular
+import "@fontsource/noto-sans-jp/700.css"; // Bold
+
 const theme = createTheme({
   palette: {
     mode: "light",
     primary: { main: "#1976d2" },
     secondary: { main: "#9c27b0" },
+    text: {
+      primary: '#4c4c4c', // デフォルトの文字色
+    },
   },
   typography: {
     // 日本語の見た目を整えたい場合は後で Noto Sans JP に差し替え可能

@@ -1,6 +1,7 @@
 // すでにログイン・adminチェックを通過している前提のメイン領域を差し替え
 import { useEffect, useMemo, useState } from "react";
-import { getDailyTotal, getSales, putSales, getFoodCosts, putFoodCosts, getLRatio, getFRatio } from "../lib/api.ts";
+import { getDailyTotal, getSales, putSales, getFoodCosts, putFoodCosts, getLRatio, getFRatio , getFLRatio} from "../lib/api.ts";
+import SalesBreakdownChart from "../components/SalesBreakdownChart.tsx";
 import { Grid } from '@mui/material';
 import {
   Card, CardContent, CardActions,
@@ -23,6 +24,7 @@ import {
   LocalPizza as LocalPizzaIcon
 } from "@mui/icons-material";
 import { set } from "date-fns";
+import { data } from "react-router-dom";
 
 function fmtYen(n: number | null | undefined) {
   if (n == null) return "-";
@@ -73,6 +75,7 @@ export default function AdminHomePage() {
   // 比率
   const [l_ratio, setLRatio] = useState<number | null>(null);
   const [f_ratio, setFRatio] = useState<number | null>(null);
+  const [f_l_ratio, setFLratio] = useState<number | null>(null);
 
   // 編集状態の追跡
   const [isEdited, setIsEdited] = useState(false);
@@ -94,6 +97,7 @@ export default function AdminHomePage() {
         getFoodCosts(d),
         getLRatio(d),
         getFRatio(d),
+        getFLRatio(d)
       ]);
 
       const nimimumWaitPromise = new Promise(resolve => setTimeout(resolve, 500)); // 最低待機時間500ms
@@ -103,7 +107,7 @@ export default function AdminHomePage() {
         nimimumWaitPromise
       ]);
 
-      const [t, s, f, r, fr] = apiResults;
+      const [t, s, f, r, fr, flr] = apiResults;
 
       setRows(t.rows);
       setTotalWage(t.total_daily_wage);
@@ -120,6 +124,7 @@ export default function AdminHomePage() {
 
       setLRatio(r.l_ratio);
       setFRatio(fr.f_ratio);
+      setFLratio(flr.f_l_ratio);
     } catch (e: any) {
       setErr(e?.message ?? "fetch failed");
     } finally {
@@ -164,6 +169,31 @@ export default function AdminHomePage() {
       setOriginalFoodNote(foodNote);
       setIsEdited(false);
       setSnack({ open: true, msg: "食材費を保存しました", sev: "success" });
+    } catch (e: any) {
+      setErr(e?.message ?? "save failed");
+      setSnack({ open: true, msg: "保存に失敗しました", sev: "error" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function saveAll() {
+    try {
+      setLoading(true);
+      setErr(null);
+
+      // 1. 売上と食材費の保存リクエストを同時に実行
+      await Promise.all([
+        putSales(date, Number(sales ?? 0), note || undefined),
+        putFoodCosts(date, Number(foodCosts ?? 0), foodNote || undefined)
+      ]);
+
+      // 2. 両方の保存が成功したら、すべてのデータを再取得して画面を完全に同期させる
+      //    これにより、L, F, FL比率がすべて正しく更新される
+      await refreshAll(date);
+      
+      setSnack({ open: true, msg: "保存しました", sev: "success" });
+
     } catch (e: any) {
       setErr(e?.message ?? "save failed");
       setSnack({ open: true, msg: "保存に失敗しました", sev: "error" });
@@ -368,14 +398,21 @@ export default function AdminHomePage() {
             </Table>
           </CardContent>
         </Card>
+
+        <Box sx={{ mt: 2 }}>
+          <SalesBreakdownChart
+            sales={sales}
+            totalWage={totalWage}
+            foodCosts={foodCosts}
+          />
+        </Box>
       </Grid>
 
       <Grid size={{ xs: 12, md: 4 }}>
         <Card elevation={6} sx={{ boxShadow: '0 8px 16px rgba(0,0,0,0.1)' }}>
           <form onSubmit={(e) => {
             e.preventDefault();
-            saveSales();
-            saveFoodCosts();
+            saveAll();
           }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -525,13 +562,13 @@ export default function AdminHomePage() {
                   <Stack spacing={1.5}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>売上：</Typography>
-                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'primary.main' }}>
+                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
                         {fmtYen(sales)}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ color: 'text.secondary' }}>人件費合計：</Typography>
-                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'primary.main' }}>
+                      <Typography sx={{ color: 'text.secondary' }}>人件費：</Typography>
+                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
                         {fmtYen(totalWage)}
                       </Typography>
                     </Box>
@@ -565,13 +602,13 @@ export default function AdminHomePage() {
                   <Stack spacing={1.5}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>売上：</Typography>
-                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'primary.main' }}>
+                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
                         {fmtYen(sales)}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ color: 'text.secondary' }}>食材費合計：</Typography>
-                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'primary.main' }}>
+                      <Typography sx={{ color: 'text.secondary' }}>食材費：</Typography>
+                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
                         {fmtYen(foodCosts)}
                       </Typography>
                     </Box>
@@ -584,6 +621,46 @@ export default function AdminHomePage() {
                         color: f_ratio && f_ratio >= 0.3 ? 'error.main' : 'success.main'
                       }}>
                         {f_ratio == null ? "-" : `${(f_ratio * 100).toFixed(2)} %`}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <AssessmentIcon color="primary" sx={{ fontSize: 28 }} />
+                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                    FL比率
+                  </Typography>
+                </Box>
+
+                <Box sx={{
+                  bgcolor: '#f8f9fa',
+                  p: 2,
+                  borderRadius: 1,
+                  border: 1,
+                  borderColor: 'divider'
+                }}>
+                  <Stack spacing={1.5}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography sx={{ color: 'text.secondary' }}>売上：</Typography>
+                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
+                        {fmtYen(sales)}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography sx={{ color: 'text.secondary' }}>食材費＋人件費：</Typography>
+                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
+                        {fmtYen((foodCosts ?? 0) + totalWage)}
+                      </Typography>
+                    </Box>
+                    <Divider />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography sx={{ color: 'text.secondary' }}>比率：</Typography>
+                      <Typography sx={{
+                        fontSize: '1.2rem',
+                        fontWeight: 'bold',
+                        color: f_l_ratio && f_l_ratio >= 0.6 ? 'error.main' : 'success.main'
+                      }}>
+                        {f_l_ratio == null ? "-" : `${(f_l_ratio * 100).toFixed(2)} %`}
                       </Typography>
                     </Box>
                   </Stack>

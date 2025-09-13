@@ -185,3 +185,39 @@ export async function getMonthlyFRatio(year: number, month: number) {
     monthly_f_ratio: number | null;
   }>;
 }
+
+// FLRatio（管理者）
+export async function getFLRatio(date: string) {
+  const u = new URL(`${BASE}/v1/f_l_ratio/daily`);
+  u.searchParams.set("date", date);
+  const r = await fetch(u.toString(), { headers: authHeader() });
+  if (!r.ok) throw new Error(`GET /v1/f_l_ratio/daily ${r.status}`);
+  return r.json() as Promise<{ date: string; daily_sale: number | null; daily_food_cost: number; total_daily_wage:number | null; f_l_ratio: number | null }>;
+}
+
+// 月次 FRatio
+export async function getMonthlyFLRatio(year: number, month: number) {
+  const BASE = import.meta.env.VITE_API_BASE_URL as string;
+  const t = localStorage.getItem("token");
+  const headers: Record<string, string> = t ? { Authorization: `Bearer ${t}` } : {};
+
+  const u = new URL(`${BASE}/v1/f_l_ratio/monthly`);
+  u.searchParams.set("year", String(year));
+  u.searchParams.set("month", String(month));
+
+  const r = await fetch(u.toString(), { headers });
+  if (!r.ok) throw new Error(`GET /v1/f_l_ratio/monthly ${r.status}`);
+  return r.json() as Promise<{
+    year: number;
+    month: number;
+    days: Array<{
+      date: string;
+      daily_sale: number | null;
+      daily_food_cost: number;
+      f_l_ratio: number | null;
+    }>;
+    monthly_sale: number | null;
+    monthly_food_cost: number;
+    monthly_f_l_ratio: number | null;
+  }>;
+}
