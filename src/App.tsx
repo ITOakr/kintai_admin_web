@@ -253,7 +253,7 @@ export default function App() {
             <Route element={<AdminRoute role={role} />}>
               <Route path="/" element={ <AdminHomePage /> } />
               <Route path="/search" element={<Container maxWidth="xl" sx={{ py: 3 }}><TimeEntrySearchPage /></Container>} />
-              <Route path="/monthly" element={<Container maxWidth="xl" sx={{ py: 3 }}>< MonthlyPage /></Container>} />
+              <Route path="/monthly" element={<MonthlyPage />} />
             </Route>
 
             {/* 未ログイン時は/loginへ、ログイン済みで見つからないページは/へ */}
