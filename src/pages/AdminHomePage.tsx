@@ -1,5 +1,6 @@
 // すでにログイン・adminチェックを通過している前提のメイン領域を差し替え
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { getDailyTotal, getSales, putSales, getFoodCosts, putFoodCosts, getLRatio, getFRatio , getFLRatio} from "../lib/api.ts";
 import SalesBreakdownChart from "../components/SalesBreakdownChart.tsx";
 import { Grid } from '@mui/material';
@@ -37,7 +38,14 @@ function minutesToHM(min: number) {
 }
 
 export default function AdminHomePage() {
-  const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [date, setDate] = useState<string>(() => {
+    const dateParam = searchParams.get("date");
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      return dateParam;
+    }
+    return new Date().toISOString().slice(0, 10);
+  });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -51,9 +59,14 @@ export default function AdminHomePage() {
     setAnchorEl(null);
   };
 
+  const updateDate = (newDate: string) => {
+    setDate(newDate);
+    setSearchParams({ date: newDate });
+  };
+
   const handleDateChange = (newDate: Date | null) => {
     if (newDate) {
-      setDate(newDate.toISOString().slice(0, 10));
+      updateDate(newDate.toISOString().slice(0, 10));
       handleCalendarClose();
     }
   };
@@ -221,7 +234,7 @@ export default function AdminHomePage() {
                 disabled={loading}
                 startIcon={<RefreshIcon />}
                 size="small"
-                sx={{ zIndex: 1 }}
+                sx={{ zIndex: 1, '&:focus': { outline: 'none' } }}
               >
                 {loading ? "更新中…" : "再計算"}
               </Button>
@@ -240,7 +253,7 @@ export default function AdminHomePage() {
                   onClick={(e) => {
                     const newDate = new Date(date);
                     newDate.setDate(newDate.getDate() - 1);
-                    setDate(newDate.toISOString().slice(0, 10));
+                    updateDate(newDate.toISOString().slice(0, 10));
                     e.currentTarget.blur();
                   }}
                   sx={{
@@ -250,7 +263,8 @@ export default function AdminHomePage() {
                     borderRadius: '4px 0 0 4px',
                     borderRight: 0,
                     minWidth: '50px',
-                    '&:hover': { bgcolor: '#e9ecef' }
+                    '&:hover': { bgcolor: '#e9ecef' },
+                    '&:focus': { outline: 'none' }
                   }}
                 >
                   <ChevronLeftIcon />
@@ -318,7 +332,8 @@ export default function AdminHomePage() {
                     borderRadius: '0 4px 4px 0',
                     borderLeft: 0,
                     minWidth: '50px',
-                    '&:hover': { bgcolor: '#e9ecef' }
+                    '&:hover': { bgcolor: '#e9ecef' },
+                    '&:focus': { outline: 'none' }
                   }}
                 >
                   <ChevronRightIcon />
@@ -672,6 +687,7 @@ export default function AdminHomePage() {
                 variant="contained"
                 type="submit"
                 disabled={loading}
+                sx ={{ '&:focus': { outline: 'none' } }}
               >
                 {loading ? "保存中…" : "保存"}
               </Button>
