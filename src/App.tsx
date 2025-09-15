@@ -5,6 +5,7 @@ import LoginPage from "./pages/LoginPage";
 import AdminHomePage from "./pages/AdminHomePage";
 import TimeEntrySearchPage from "./pages/TimeEntrySearchPage";
 import MonthlyPage from "./pages/MonthlyPage";
+import UserManagementPage from "./pages/UserManagementPage";
 
 import {
   AppBar, Toolbar, Typography, Container, Button, Stack, Card, CardContent, CardActions, Box,
@@ -13,7 +14,8 @@ import {
 import {
   Search as SearchIcon,
   Assessment as AssessmentIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  GroupAdd as GroupAddIcon
 } from "@mui/icons-material";
 import SavingsIcon from '@mui/icons-material/Savings';
 
@@ -93,6 +95,24 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
               <ListItemText primary="月次レポート" />
             </ListItemButton>
           </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton 
+              component={Link} 
+              to="/users" 
+              sx={{
+                color: 'primary.main',
+                backgroundColor: location.pathname === '/users' ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
+                '& .MuiTypography-root': {
+                  fontWeight: location.pathname === '/users' ? 'bold' : 'normal'
+                }
+              }}
+            >
+              <ListItemIcon>
+                <GroupAddIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText primary="従業員管理" />
+            </ListItemButton>
+          </ListItem>
         </List>
         <Divider />
         <List sx={{ marginTop: 'auto' }}>
@@ -121,6 +141,8 @@ function HeaderContent() {
         return { text: '勤怠検索', icon: <SearchIcon /> };
       case '/monthly':
         return { text: '月次レポート', icon: <AssessmentIcon /> };
+      case '/users':
+        return { text: '従業員管理', icon: <GroupAddIcon /> };
       default:
         return { text: '人件費計算', icon: <SavingsIcon /> };
     }
@@ -254,6 +276,7 @@ export default function App() {
               <Route path="/" element={ <AdminHomePage /> } />
               <Route path="/search" element={<Container maxWidth="xl" sx={{ py: 3 }}><TimeEntrySearchPage /></Container>} />
               <Route path="/monthly" element={<MonthlyPage />} />
+              <Route path="/users" element={<UserManagementPage />} />
             </Route>
 
             {/* 未ログイン時は/loginへ、ログイン済みで見つからないページは/へ */}
