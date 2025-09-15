@@ -9,6 +9,7 @@ import {
   Paper,
   TableFooter
 } from "@mui/material";
+import { useNavigate } from "react-router-dom"; 
 import { MonthlyData } from "../pages/MonthlyPage"; // 親から型定義をインポート
 
 // --- このファイル内でしか使わないヘルパー関数 ---
@@ -20,12 +21,28 @@ function fmtPct(x: number | null | undefined) {
   if (x == null) return "-";
   return (x * 100).toFixed(2) + " %";
 }
-function fmtDateWithDay(dateStr: string) {
+function fmtDateCell({ dateStr }: { dateStr: string }) {
   const date = new Date(dateStr);
   const day = date.getDate();
   const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
-  const dayOfWeek = weekDays[date.getDay()];
-  return `${day}日（${dayOfWeek}）`;
+  const dayOfWeekIndex = date.getDay();
+  const dayOfWeek = weekDays[dayOfWeekIndex];
+
+  let dayColor = 'inherit';
+  if (dayOfWeekIndex === 0){
+    dayColor = 'error.main'; // 日曜日は赤
+  } else if (dayOfWeekIndex === 6) {
+    dayColor = 'primary.main'; // 土曜日は青
+  }
+
+  return (
+    <>
+      {day}日
+      <Box component="span" sx={{ color: dayColor }}>
+        ({dayOfWeek})
+      </Box>
+    </>
+  );
 }
 
 // このコンポーネントが受け取るPropsの型定義
@@ -48,6 +65,10 @@ export default function MonthlyReportTable({
   monthFRatio,
   monthFLRatio
 }: MonthlyReportTableProps) {
+  const navigate = useNavigate();
+  const handleRowClick = (date: string) => {
+    navigate(`/?date=${date}`);
+  }
   return (
     <TableContainer component={Paper} elevation={0} sx={{ 
       border: '2px solid #e0e0e0', 
@@ -84,8 +105,18 @@ export default function MonthlyReportTable({
         </TableHead>
         <TableBody>
           {rows.map((row) => (
-            <TableRow key={row.date} hover sx={{ '&:hover': { bgcolor: '#f8f9fa' } }}>
-              <TableCell>{fmtDateWithDay(row.date)}</TableCell>
+            <TableRow 
+              key={row.date} 
+              hover 
+              onClick={() => handleRowClick(row.date)}
+              sx={{ 
+                '&:hover': { bgcolor: '#f8f9fa' },
+                cursor: 'pointer'
+              }}
+            >
+              <TableCell>
+                {fmtDateCell({ dateStr: row.date }) }
+              </TableCell>
               <TableCell align="right">{fmtYen(row.daily_sales)}</TableCell>
               <TableCell align="right">{fmtYen(row.total_daily_wage)}</TableCell>
               <TableCell align="right">{fmtYen(row.daily_food_costs)}</TableCell>
