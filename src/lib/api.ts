@@ -15,6 +15,32 @@ export async function login(email: string, password: string) {
   return r.json() as Promise<{ token: string; user: { id: number; name: string; email: string } }>;
 }
 
+export async function getPendingUsers() {
+  const r = await fetch(`${BASE}/users/pending`, { headers: authHeader() });
+  if (!r.ok) throw new Error(`GET /users/pending ${r.status}`);
+  return r.json() as Promise<Array<{ 
+    id:number;
+    email:string;
+    name:string;
+    created_at:string;
+  }>>;
+}
+
+export async function approveUser(userId: number, role: "employee" | "admin", base_hourly_wage: number) {
+  const u = new URL(`${BASE}/users/${userId}/approve`);
+  const body = new URLSearchParams({ role: role, base_hourly_wage: String(base_hourly_wage) });
+  const r = await fetch(u.toString(), {
+    method: "PATCH",
+    headers: { ...authHeader(), "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+    body,
+  });
+  if (!r.ok) {
+    const resBody = await r.json();
+    throw new Error(resBody?.errors?.join(", ") ?? `POST /users/${userId}/approve ${r.status}`);
+  }
+  return r.json() as Promise<{ message: string }>;
+}
+
 export async function me() {
   const r = await fetch(`${BASE}/auth/me`, { headers: authHeader() });
   if (!r.ok) throw new Error(`me ${r.status}`);
