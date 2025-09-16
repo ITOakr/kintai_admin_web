@@ -15,6 +15,7 @@ import {
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import DownloadIcon from '@mui/icons-material/Download';
 
 // このコンポーネントが受け取るPropsの型定義
 interface MonthlyReportHeaderProps {
@@ -28,6 +29,7 @@ interface MonthlyReportHeaderProps {
   onNextYear: () => void;
   onPrevMonth: () => void;
   onNextMonth: () => void;
+  onExportClick: () => void;
 }
 
 export default function MonthlyReportHeader({
@@ -40,7 +42,8 @@ export default function MonthlyReportHeader({
   onPrevYear,
   onNextYear,
   onPrevMonth,
-  onNextMonth
+  onNextMonth,
+  onExportClick,
 }: MonthlyReportHeaderProps) {
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 21 }, (_, i) => currentYear - 10 + i);
@@ -121,6 +124,16 @@ export default function MonthlyReportHeader({
               >
                 <ChevronRightIcon />
               </IconButton>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<DownloadIcon />}
+                onClick={onExportClick}
+                disabled={loading}
+              >
+                出力
+              </Button>
+              {loading && <CircularProgress size={24} />}
             </Box>
           </Box>
           
