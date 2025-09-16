@@ -22,7 +22,8 @@ import {
   Paid as PaidIcon,
   Assessment as AssessmentIcon,
   Warning as WarningIcon,
-  LocalPizza as LocalPizzaIcon
+  LocalPizza as LocalPizzaIcon,
+  FiberManualRecord as FiberManualRecordIcon
 } from "@mui/icons-material";
 import { set } from "date-fns";
 import { data } from "react-router-dom";
@@ -269,7 +270,25 @@ export default function AdminHomePage() {
                 >
                   <ChevronLeftIcon />
                 </Button>
-
+                <Button
+                  onClick={(e) => {
+                    const newDate = new Date();
+                    newDate.setDate(newDate.getDate());
+                    updateDate(newDate.toISOString().slice(0, 10));
+                    e.currentTarget.blur();
+                  }}
+                  sx={{
+                    bgcolor: '#f8f9fa',
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: '4px',
+                    minWidth: '50px',
+                    '&:hover': { bgcolor: '#e9ecef' },
+                    '&:focus': { outline: 'none' }
+                  }}
+                >
+                  <FiberManualRecordIcon sx={{ fontSize: 12, color: '#1976d2' }} />
+                </Button>
                 <Box
                   onClick={handleDateClick}
                   sx={{
