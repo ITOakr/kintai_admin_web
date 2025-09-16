@@ -3,6 +3,7 @@ import { Box, Card, CardContent, Typography } from "@mui/material";
 import { getMonthlyLRatio, getMonthlyFRatio, getMonthlyFLRatio } from "../lib/api";
 import MonthlyReportHeader from "../components/MonthlyReportHeader";
 import MonthlyReportTable from "../components/MonthlyReportTable";
+import ExcelDownloadButton from "../components/ExcelDownloadButton";
 
 // 月次データの型定義
 export interface MonthlyData {
@@ -29,6 +30,16 @@ export default function MonthlyPage() {
   const [monthLRatio, setMonthLRatio] = useState<number | null>(null);
   const [monthFRatio, setMonthFRatio] = useState<number | null>(null);
   const [monthFLRatio, setMonthFLRatio] = useState<number | null>(null);
+  const fileName = `月次レポート_${year}年${month}月.xlsx`;
+  const formattedRowsforExcel = rows.map(row => ({
+    '日付': row.date,
+    '売上(円)': row.daily_sales,
+    '人件費(円)': row.total_daily_wage,
+    '食材費(円)': row.daily_food_costs,
+    'L比率(%)': row.l_ratio ? (row.l_ratio * 100).toFixed(2) : null,
+    'F比率(%)': row.f_ratio ? (row.f_ratio * 100).toFixed(2) : null,
+    'FL比率(%)': row.fl_ratio ? (row.fl_ratio * 100).toFixed(2) : null,
+  }));
 
   // --- データ取得ロジック ---
   async function fetchMonthly() {
@@ -112,6 +123,12 @@ export default function MonthlyPage() {
         onNextYear={handleNextYear}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
+        onExportClick={() => {
+          const button = document.getElementById('excel-download-button');
+          if (button) {
+            button.click();
+          }
+        }}
       />
 
       {/* テーブルコンポーネントを呼び出し */}
@@ -131,6 +148,14 @@ export default function MonthlyPage() {
           />
         </CardContent>
       </Card>
+      <div style={{ display: 'none' }}>
+        <ExcelDownloadButton
+          data={formattedRowsforExcel}
+          fileName={fileName}
+          buttonName="Excel Download"
+          id="excel-download-button"
+        />
+      </div>
     </Box>
   );
 }
