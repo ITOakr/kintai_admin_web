@@ -145,7 +145,7 @@ export default function UserManagementPage() {
                   ))}
                   {pendingUsers.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} align="center">承認待ちのユーザーはいません</TableCell>
+                      <TableCell colSpan={4} align="center">承認待ちのユーザーはいません</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
