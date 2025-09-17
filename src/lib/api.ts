@@ -47,6 +47,34 @@ export async function me() {
   return r.json() as Promise<{ id:number; email:string; name:string; role?: "employee"|"admin" }>;
 }
 
+export async function getUsers() {
+  const r = await fetch(`${BASE}/users`, { headers: authHeader() });
+  if (!r.ok) throw new Error(`GET /users ${r.status}`);
+  return r.json() as Promise<Array<{ 
+    id:number;
+    email:string;
+    name:string;
+    role:"employee"|"admin";
+    base_hourly_wage:number;
+    created_at:string;
+  }>>;
+}
+
+export async function updateUser(userId: number, role: "employee" | "admin", base_hourly_wage: number) {
+  const u = new URL(`${BASE}/users/${userId}`);
+  const body = new URLSearchParams({ role: role, base_hourly_wage: String(base_hourly_wage) });
+  const r = await fetch(u.toString(), {
+    method: "PATCH",
+    headers: { ...authHeader(), "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+    body,
+  });
+  if (!r.ok) {
+    const resBody = await r.json();
+    throw new Error(resBody?.errors?.join(", ") ?? `PATCH /users/${userId} ${r.status}`);
+  }
+  return r.json() as Promise<{ message: string }>;
+}
+
 export async function getEntries(userId: number, date: string) {
   const u = new URL(`${BASE}/v1/timeclock/time_entries`);
   u.searchParams.set("user_id", String(userId));
