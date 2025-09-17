@@ -181,7 +181,7 @@ export default function UserManagementPage() {
                   ))}
                   {activeUsers.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} align="center">従業員データがありません</TableCell>
+                      <TableCell colSpan={5} align="center">従業員データがありません</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
