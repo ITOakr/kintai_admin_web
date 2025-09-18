@@ -34,49 +34,45 @@ export default function LoginPage({ onLoginSuccess, initialError }: Props) {
   }
 
   return (
-    <Box 
-      sx={{
-        height: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Card sx={{ width: 380, maxWidth: "90vw" }} component="form" onSubmit={doLogin}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            勤怠（管理者）ログイン
-          </Typography>
-          <Stack spacing={2} sx={{ mt: 2 }}>
-            <TextField
-              label="メール"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="username"
-              fullWidth
-            />
-            <TextField
-              label="パスワード"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              fullWidth
-            />
-          </Stack>
-          {authErr && (
-            <Typography color="error" variant="body2" sx={{ mt: 2 }}>
-              {authErr}
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', bgcolor: 'primary.main' }}>
+      <Stack spacing={4} alignItems="center">
+        <img src="/FLan_logo.png" alt="logo" style={{ width: '250px' }} />
+        <Card sx={{ width: 380, maxWidth: "90vw", mt: 4 }} component="form" onSubmit={doLogin}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom align="center" sx={{ fontWeight: 'bold' }}>
+              ログイン
             </Typography>
-          )}
-        </CardContent>
-        <CardActions sx={{ justifyContent: "flex-end", px: 2, pb: 2 }}>
-          <Button type="submit" variant="contained" disabled={loginBusy} >
-            {loginBusy ? "ログイン中…" : "ログイン"}
-          </Button>
-        </CardActions>
-      </Card>
+            <Stack spacing={2} sx={{ mt: 2 }}>
+              <TextField
+                label="メール"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                fullWidth
+              />
+              <TextField
+                label="パスワード"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                fullWidth
+              />
+            </Stack>
+            {authErr && (
+              <Typography color="error" variant="body2" sx={{ mt: 2 }}>
+                {authErr}
+              </Typography>
+            )}
+          </CardContent>
+          <CardActions sx={{ px: 2, pb: 2, mt: 1 }}>
+            <Button type="submit" variant="contained" disabled={loginBusy} fullWidth>
+              {loginBusy ? "ログイン中…" : "ログイン"}
+            </Button>
+          </CardActions>
+        </Card>
+      </Stack>
     </Box>
   );
 }

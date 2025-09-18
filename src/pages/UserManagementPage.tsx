@@ -156,12 +156,12 @@ export default function UserManagementPage() {
         <CardContent>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tabs value={tabIndex} onChange={handleTabChange} aria-label="user management tabs">
-              <Tab label="承認待ちユーザー" id="simple-tab-0" sx={{ '&:focus': { outline: 'none' } }} />
-              <Tab label="従業員一覧" id="simple-tab-1" sx={{ '&:focus': { outline: 'none' } }} />
+              <Tab label="従業員一覧" id="simple-tab-0" sx={{ '&:focus': { outline: 'none' } }} />
+              <Tab label="承認待ちユーザー" id="simple-tab-1" sx={{ '&:focus': { outline: 'none' } }} />
             </Tabs>
           </Box>
 
-          <CustomTabPanel value={tabIndex} index={0}>
+          <CustomTabPanel value={tabIndex} index={1}>
             {loading ? <CircularProgress /> : (
               <Table>
                 <TableHead sx={{ '& .MuiTableCell-root': { fontWeight: 'bold' } }}>
@@ -193,7 +193,7 @@ export default function UserManagementPage() {
             )}
           </CustomTabPanel>
 
-          <CustomTabPanel value={tabIndex} index={1}>
+          <CustomTabPanel value={tabIndex} index={0}>
             {/* 従業員一覧 */}
             {loading ? <CircularProgress /> : (
               <Table>
