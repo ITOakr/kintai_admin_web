@@ -75,6 +75,19 @@ export async function updateUser(userId: number, role: "employee" | "admin", bas
   return r.json() as Promise<{ message: string }>;
 }
 
+export async function deleteUser(userId: number) {
+  const u = new URL(`${BASE}/users/${userId}`);
+  const r = await fetch(u.toString(), {
+    method: "DELETE",
+    headers: authHeader(),
+  });
+  if (!r.ok) {
+    const resBody = await r.json();
+    throw new Error(resBody?.errors?.join(", ") ?? `DELETE /users/${userId} ${r.status}`);
+  }
+  return r.json() as Promise<{ message: string }>;
+}
+
 export async function getEntries(userId: number, date: string) {
   const u = new URL(`${BASE}/v1/timeclock/time_entries`);
   u.searchParams.set("user_id", String(userId));

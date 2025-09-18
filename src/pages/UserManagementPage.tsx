@@ -1,10 +1,15 @@
 import { useEffect, useState, useCallback } from "react";
-import { getPendingUsers, approveUser, getUsers } from "../lib/api";
+import { getPendingUsers, approveUser, getUsers, updateUser, deleteUser } from "../lib/api";
 import {
   Box, Typography, Card, CardContent, Table, TableHead, TableRow, TableCell,
   TableBody, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogContent,
-  DialogActions, TextField, Select, MenuItem, FormControl, InputLabel, SelectChangeEvent, Stack, Tab, Tabs
+  DialogActions, TextField, Select, MenuItem, FormControl, InputLabel, SelectChangeEvent, Stack, Tab, Tabs, IconButton, Divider
 } from "@mui/material";
+import { 
+  Edit as EditIcon, 
+  Delete as DeleteIcon 
+} from '@mui/icons-material';
+
 interface User {
   id: number;
   name: string;
@@ -49,10 +54,12 @@ export default function UserManagementPage() {
   const [tabIndex, setTabIndex] = useState(0);
 
   // --- ダイアログ用のState ---
-  const [open, setOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'approve' | 'edit' | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [role, setRole] = useState<'employee' | 'admin'>('employee');
   const [wage, setWage] = useState<number>(1100);
+
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const fetchAllUsers = useCallback(async () => {
     try {
@@ -80,29 +87,62 @@ export default function UserManagementPage() {
     setTabIndex(newValue);
   };
 
-  const handleOpenDialog = (user: User) => {
+  const handleOpenDialog = (user: User, mode: 'approve' | 'edit') => {
     setSelectedUser(user);
-    setRole('employee');
-    setWage(1004); // デフォルト時給
-    setOpen(true);
+    setDialogMode(mode);
+    setRole(user.role ?? 'employee');
+    setWage(user.base_hourly_wage || 1100); // デフォルト時給
   };
 
   const handleCloseDialog = () => {
-    setOpen(false);
+    setDialogMode(null);
     setSelectedUser(null);
   };
 
-  const handleApprove = async () => {
+  const handleOpenDeleteConfirm = (user: User) => {
+    setSelectedUser(user);
+    setDeleteConfirmOpen(true);
+  };
+  
+  const handleCloseDeleteConfirm = () => {
+    setSelectedUser(null);
+    setDeleteConfirmOpen(false);
+  };
+
+  const handleConfirm = async () => {
     if (!selectedUser) return;
     try {
       setLoading(true);
+      setError(null);
       setSuccess(null);
-      const res = await approveUser(selectedUser.id, role, wage);
-      setSuccess(res.message);
+      let res;
+      if (dialogMode === 'approve') {
+        res = await approveUser(selectedUser.id, role, wage);
+      } else if (dialogMode === 'edit') {
+        res = await updateUser(selectedUser.id, role, wage);
+      }
+      setSuccess(res?.message || "処理が完了しました");
       handleCloseDialog();
       await fetchAllUsers(); // 一覧を再取得
     } catch (e: any) {
-      setError(e.message ?? "承認処理に失敗しました");
+      setError(e.message ?? "処理に失敗しました");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedUser) return;
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+      const res = await deleteUser(selectedUser.id);
+      setSuccess(res?.message || "削除しました");
+      handleCloseDeleteConfirm();
+      await fetchAllUsers(); // 一覧を再取得
+    } catch (e: any) {
+      setError(e.message ?? "削除に失敗しました");
     } finally {
       setLoading(false);
     }
@@ -124,7 +164,7 @@ export default function UserManagementPage() {
           <CustomTabPanel value={tabIndex} index={0}>
             {loading ? <CircularProgress /> : (
               <Table>
-                <TableHead>
+                <TableHead sx={{ '& .MuiTableCell-root': { fontWeight: 'bold' } }}>
                   <TableRow>
                     <TableCell>名前</TableCell>
                     <TableCell>メールアドレス</TableCell>
@@ -139,7 +179,7 @@ export default function UserManagementPage() {
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{new Date(user.created_at).toLocaleString('ja-JP')}</TableCell>
                       <TableCell>
-                        <Button variant="contained" onClick={() => handleOpenDialog(user)}>承認</Button>
+                        <Button variant="contained" onClick={() => handleOpenDialog(user, 'approve')}>承認</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -157,13 +197,13 @@ export default function UserManagementPage() {
             {/* 従業員一覧 */}
             {loading ? <CircularProgress /> : (
               <Table>
-                <TableHead>
+                <TableHead sx={{ '& .MuiTableCell-root': { fontWeight: 'bold' } }}>
                   <TableRow>
                     <TableCell>名前</TableCell>
                     <TableCell>メールアドレス</TableCell>
                     <TableCell>役職</TableCell>
                     <TableCell>時給</TableCell>
-                    <TableCell>操作</TableCell>
+                    <TableCell>編集 / 削除</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -175,7 +215,18 @@ export default function UserManagementPage() {
                       <TableCell>{user.base_hourly_wage?.toLocaleString() ?? 0} 円</TableCell>
                       <TableCell>
                         {/* 将来的に編集機能などを追加する場合はこちらにボタンを配置 */}
-                        -
+                        <IconButton
+                          onClick={() => handleOpenDialog(user, 'edit')}
+                          sx={{ '&:focus': { outline: 'none' } }}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => handleOpenDeleteConfirm(user)}
+                          sx={{ '&:focus': { outline: 'none' } }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -191,11 +242,11 @@ export default function UserManagementPage() {
         </CardContent>
       </Card>
 
-      {/* 承認ダイアログ */}
-      <Dialog open={open} onClose={handleCloseDialog}>
-        <DialogTitle>ユーザーの承認</DialogTitle>
+      {/* 承認 / 編集 ダイアログ */}
+      <Dialog open={!!dialogMode} onClose={handleCloseDialog}>
+        <DialogTitle>{dialogMode === 'approve' ? '従業員の承認' : '従業員の編集'}</DialogTitle>
         <DialogContent>
-          <Typography sx={{ mb: 2 }}>{selectedUser?.name} さんを承認します。</Typography>
+          <Typography sx={{ mb: 2 }}>{selectedUser?.name} さんを{dialogMode === 'approve' ? '承認' : '編集'}します。</Typography>
           <Stack spacing={2} sx={{ pt: 1 }}>
             <FormControl fullWidth>
               <InputLabel id="role-select-label">役職</InputLabel>
@@ -219,8 +270,31 @@ export default function UserManagementPage() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>キャンセル</Button>
-          <Button onClick={handleApprove} variant="contained">承認する</Button>
+          <Button onClick={handleCloseDialog} sx={{ '&:focus': { outline: 'none' } }}>キャンセル</Button>
+          <Button onClick={handleConfirm} variant="contained" disabled={loading} sx={{ '&:focus': { outline: 'none' } }}>
+            {loading ? <CircularProgress size={24} /> : (dialogMode === 'approve' ? '承認' : '保存')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 削除確認ダイアログ */}
+      <Dialog open={deleteConfirmOpen} onClose={handleCloseDeleteConfirm}>
+        <DialogTitle>従業員の削除</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            {selectedUser?.name} さんを削除します。よろしいですか？
+          </Typography>
+          <Divider />
+          <Typography color="error" sx={{ mt: 2 }}>
+            ※ 削除したユーザーは復元できません。<br/>
+            ※ 関連する勤怠データは削除されません。
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteConfirm} sx={{ '&:focus': { outline: 'none' } }}>キャンセル</Button>
+          <Button onClick={handleDelete} variant="contained" color="error" disabled={loading} sx={{ '&:focus': { outline: 'none' } }}>
+            {loading ? <CircularProgress size={24} /> : '削除'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
