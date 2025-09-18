@@ -156,44 +156,11 @@ export default function UserManagementPage() {
         <CardContent>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tabs value={tabIndex} onChange={handleTabChange} aria-label="user management tabs">
-              <Tab label="承認待ちユーザー" id="simple-tab-0" sx={{ '&:focus': { outline: 'none' } }} />
-              <Tab label="従業員一覧" id="simple-tab-1" sx={{ '&:focus': { outline: 'none' } }} />
+              <Tab label="従業員一覧" id="simple-tab-0" sx={{ '&:focus': { outline: 'none' } }} />
+              <Tab label="承認待ちユーザー" id="simple-tab-1" sx={{ '&:focus': { outline: 'none' } }} />
             </Tabs>
           </Box>
-
           <CustomTabPanel value={tabIndex} index={0}>
-            {loading ? <CircularProgress /> : (
-              <Table>
-                <TableHead sx={{ '& .MuiTableCell-root': { fontWeight: 'bold' } }}>
-                  <TableRow>
-                    <TableCell>名前</TableCell>
-                    <TableCell>メールアドレス</TableCell>
-                    <TableCell>申請日時</TableCell>
-                    <TableCell>操作</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {pendingUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{new Date(user.created_at).toLocaleString('ja-JP')}</TableCell>
-                      <TableCell>
-                        <Button variant="contained" onClick={() => handleOpenDialog(user, 'approve')}>承認</Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {pendingUsers.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} align="center">承認待ちのユーザーはいません</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            )}
-          </CustomTabPanel>
-
-          <CustomTabPanel value={tabIndex} index={1}>
             {/* 従業員一覧 */}
             {loading ? <CircularProgress /> : (
               <Table>
@@ -233,6 +200,38 @@ export default function UserManagementPage() {
                   {activeUsers.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} align="center">従業員データがありません</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </CustomTabPanel>
+
+          <CustomTabPanel value={tabIndex} index={1}>
+            {loading ? <CircularProgress /> : (
+              <Table>
+                <TableHead sx={{ '& .MuiTableCell-root': { fontWeight: 'bold' } }}>
+                  <TableRow>
+                    <TableCell>名前</TableCell>
+                    <TableCell>メールアドレス</TableCell>
+                    <TableCell>申請日時</TableCell>
+                    <TableCell>操作</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {pendingUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{new Date(user.created_at).toLocaleString('ja-JP')}</TableCell>
+                      <TableCell>
+                        <Button variant="contained" onClick={() => handleOpenDialog(user, 'approve')}>承認</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {pendingUsers.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">承認待ちのユーザーはいません</TableCell>
                     </TableRow>
                   )}
                 </TableBody>

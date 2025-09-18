@@ -246,8 +246,41 @@ export default function App() {
         {token && role === "admin" && (
           <>
             <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-              <Toolbar sx={{ justifyContent: 'center' }}>
-                <HeaderContent />
+              <Toolbar sx={{ 
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center', 
+              }}>
+                <Box sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  minWidth: {xs: 'auto', sm: '200px'}, 
+                  }}
+                > {/* 左側の余白確保 */}
+                  <img 
+                    src="/FLan_logo.png" 
+                    alt="Logo" 
+                    style={{ 
+                      height: 50, 
+                      objectFit: 'contain'
+                    }}
+                  />
+                </Box>
+                <Box sx={{ 
+                  position: 'absolute',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  display: { xs: 'none', sm: 'flex' }, // 小画面では非表示
+                  alignItems: 'center'
+                }}>
+                  <HeaderContent />
+                </Box>
+                <Box sx={{ 
+                  minWidth: { xs: 'auto', sm: '200px' },
+                  display: 'flex',
+                  justifyContent: 'flex-end'
+                }}> {/* 右側の余白確保 */}
+                </Box>
               </Toolbar>
             </AppBar>
             <Sidebar onLogout={logout} />
