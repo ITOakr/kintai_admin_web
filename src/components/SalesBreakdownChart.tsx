@@ -5,7 +5,7 @@ import DataUsageIcon from '@mui/icons-material/DataUsage';
 interface SalesBreakdownChartProps {
   sales: number | null;
   totalWage: number;
-  foodCosts: number | null;
+  foodCosts: number;
 }
 
 // 金額をフォーマットするヘルパー関数
