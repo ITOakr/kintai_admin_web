@@ -144,13 +144,20 @@ export async function getSales(date: string) {
   return r.json() as Promise<{ date: string; amount_yen: number | null; note: string | null }>;
 }
 
+export interface FoodCostItem {
+  id?: number;
+  category: string;
+  amount_yen: number;
+  note: string | null;
+}
+
 // 食材費の取得/保存（管理者）
 export async function getFoodCosts(date: string) {
   const u = new URL(`${BASE}/v1/food_costs`);
   u.searchParams.set("date", date);
   const r = await fetch(u.toString(), { headers: authHeader() });
   if (!r.ok) throw new Error(`GET /v1/food_costs ${r.status}`);
-  return r.json() as Promise<{ date: string; amount_yen: number | null; note: string | null }>;
+  return r.json() as Promise<FoodCostItem[]>;
 }
 
 export async function putSales(date: string, amount_yen: number, note?: string) {
@@ -167,18 +174,35 @@ export async function putSales(date: string, amount_yen: number, note?: string) 
   return r.json() as Promise<{ id: number; date: string; amount_yen: number; note?: string | null }>;
 }
 
-export async function putFoodCosts(date: string, amount_yen: number, note?: string) {
+export async function putFoodCosts(date: string, foodCostItems: FoodCostItem[]) {
   const u = new URL(`${BASE}/v1/food_costs`);
   u.searchParams.set("date", date);
-  const body = new URLSearchParams({ amount_yen: String(amount_yen) });
-  if (note) body.set("note", note);
+
+  const body = new URLSearchParams();
+  foodCostItems.forEach((item, index) => {
+    if (item.amount_yen > 0) {
+      if (item.id) {
+        body.append(`food_costs[][id]`, String(item.id));
+      }
+    }
+    body.append(`food_costs[][category]`, item.category);
+    body.append(`food_costs[][amount_yen]`, String(item.amount_yen));
+    if (item.note) {
+      body.append(`food_costs[][note]`, item.note);
+    }
+  });
+
   const r = await fetch(u.toString(), {
     method: "PUT",
     headers: { ...authHeader(), "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
     body,
   });
-  if (!r.ok) throw new Error(`PUT /v1/food_costs ${r.status}`);
-  return r.json() as Promise<{ id: number; date: string; amount_yen: number; note?: string | null }>;
+  if (!r.ok) {
+    const resBody = await r.json();
+    const errorMsg = resBody?.errors?.join(", ") ?? `PUT /v1/food_costs ${r.status}`;
+    throw new Error(errorMsg);
+  }
+  return r.json() as Promise<FoodCostItem[]>;
 }
 
 // LRatio（管理者）

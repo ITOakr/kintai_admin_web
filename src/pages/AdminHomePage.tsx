@@ -1,9 +1,9 @@
 // すでにログイン・adminチェックを通過している前提のメイン領域を差し替え
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { getDailyTotal, getSales, putSales, getFoodCosts, putFoodCosts, getLRatio, getFRatio , getFLRatio} from "../lib/api.ts";
+import { Form, useSearchParams } from "react-router-dom";
+import { getDailyTotal, getSales, putSales, getFoodCosts, FoodCostItem, putFoodCosts, getLRatio, getFRatio, getFLRatio } from "../lib/api.ts";
 import SalesBreakdownChart from "../components/SalesBreakdownChart.tsx";
-import { Grid } from '@mui/material';
+import { Grid, Input, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import {
   Card, CardContent, CardActions,
   Typography, TextField, Button, Divider,
@@ -23,7 +23,9 @@ import {
   Assessment as AssessmentIcon,
   Warning as WarningIcon,
   LocalPizza as LocalPizzaIcon,
-  FiberManualRecord as FiberManualRecordIcon
+  FiberManualRecord as FiberManualRecordIcon,
+  AddCircleOutline as AddCircleOutlineIcon,
+  Delete as DeleteIcon
 } from "@mui/icons-material";
 import { set } from "date-fns";
 import { data } from "react-router-dom";
@@ -37,6 +39,13 @@ function minutesToHM(min: number) {
   const m = min % 60;
   return `${h}時間${m}分`;
 }
+
+const FOOD_CATEGORIES = {
+  meat: "肉類",
+  ingredient: "食材",
+  drink: "ドリンク",
+  other: "その他"
+};
 
 export default function AdminHomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -83,8 +92,10 @@ export default function AdminHomePage() {
   const [note, setNote] = useState<string>("");
 
   // 食材費
-  const [foodCosts, setFoodCosts] = useState<number | null>(null);
-  const [foodNote, setFoodNote] = useState<string>("");
+  const [foodCostItems, setFoodCostItems] = useState<FoodCostItem[]>([]);
+  const totalFoodCosts = useMemo(() => {
+    return foodCostItems.reduce((sum, item) => sum + item.amount_yen, 0);
+  }, [foodCostItems]);
 
   // 比率
   const [l_ratio, setLRatio] = useState<number | null>(null);
@@ -95,8 +106,7 @@ export default function AdminHomePage() {
   const [isEdited, setIsEdited] = useState(false);
   const [originalSales, setOriginalSales] = useState<number | null>(null);
   const [originalNote, setOriginalNote] = useState<string>("");
-  const [originalFoodCosts, setOriginalFoodCosts] = useState<number | null>(null);
-  const [originalFoodNote, setOriginalFoodNote] = useState<string>("");
+  const [originalFoodCostItems, setOriginalFoodCostItems] = useState<FoodCostItem[]>([]);
 
   const [snack, setSnack] = useState<{ open: boolean; msg: string; sev: "success" | "error" | "warning" }>({ open: false, msg: "", sev: "success" });
 
@@ -128,12 +138,10 @@ export default function AdminHomePage() {
 
       setSales(s.amount_yen);
       setNote(s.note ?? "");
-      setFoodCosts(f.amount_yen);
-      setFoodNote(f.note ?? "");
+      setFoodCostItems(f);
       setOriginalSales(s.amount_yen);
       setOriginalNote(s.note ?? "");
-      setOriginalFoodCosts(f.amount_yen);
-      setOriginalFoodNote(f.note ?? "");
+      setOriginalFoodCostItems(f);
       setIsEdited(false);
 
       setLRatio(r.l_ratio);
@@ -150,6 +158,32 @@ export default function AdminHomePage() {
     refreshAll(date);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
+
+  const handleFoodCostItemChange = (index: number, field: keyof FoodCostItem, value: string | number) => {
+    const newItems = [...foodCostItems];
+    let processedValue = value;
+    if (field === "amount_yen") {
+      // 全角数字を半角数字に変換
+      const normalized = String(value)
+        .replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+        .replace(/[^0-9]/g, ''); // 数字以外の文字を除去
+      processedValue = normalized === "" ? 0 : Number(normalized);
+    }
+    (newItems[index] as any)[field] = processedValue;
+    setFoodCostItems(newItems);
+    setIsEdited(true);
+  };
+
+  const addFoodCostItem = () => {
+    setFoodCostItems([...foodCostItems, { category: "meat", amount_yen: 0, note: "" }]);
+    setIsEdited(true);
+  };
+
+  const removeFoodCostItem = (index: number) => {
+    const newItems = foodCostItems.filter((_, i) => i !== index);
+    setFoodCostItems(newItems);
+    setIsEdited(true);
+  };
 
   async function saveSales() {
     try {
@@ -175,12 +209,11 @@ export default function AdminHomePage() {
     try {
       setLoading(true);
       setErr(null);
-      await putFoodCosts(date, Number(foodCosts ?? 0), foodNote || undefined);
+      await putFoodCosts(date, foodCostItems);
       // 保存後、最新の比率を再計算して反映
       const fr = await getFRatio(date);
       setFRatio(fr.f_ratio);
-      setOriginalFoodCosts(foodCosts);
-      setOriginalFoodNote(foodNote);
+      setOriginalFoodCostItems(foodCostItems);
       setIsEdited(false);
       setSnack({ open: true, msg: "食材費を保存しました", sev: "success" });
     } catch (e: any) {
@@ -199,13 +232,13 @@ export default function AdminHomePage() {
       // 1. 売上と食材費の保存リクエストを同時に実行
       await Promise.all([
         putSales(date, Number(sales ?? 0), note || undefined),
-        putFoodCosts(date, Number(foodCosts ?? 0), foodNote || undefined)
+        putFoodCosts(date, foodCostItems)
       ]);
 
       // 2. 両方の保存が成功したら、すべてのデータを再取得して画面を完全に同期させる
       //    これにより、L, F, FL比率がすべて正しく更新される
       await refreshAll(date);
-      
+
       setSnack({ open: true, msg: "保存しました", sev: "success" });
 
     } catch (e: any) {
@@ -437,7 +470,7 @@ export default function AdminHomePage() {
           <SalesBreakdownChart
             sales={sales}
             totalWage={totalWage}
-            foodCosts={foodCosts}
+            foodCosts={totalFoodCosts}
           />
         </Box>
       </Grid>
@@ -468,17 +501,7 @@ export default function AdminHomePage() {
 
                     const newValue = normalized === "" ? null : Number(normalized);
                     setSales(newValue);
-                    const hasChanges = newValue !== originalSales || note !== originalNote;
-                    setIsEdited(hasChanges);
-
-                    // 最初の編集時のみスナックバー警告を表示
-                    if (hasChanges && !isEdited) {
-                      setSnack({
-                        open: true,
-                        msg: "変更が保存されていません",
-                        sev: "warning"
-                      });
-                    }
+                    setIsEdited(true);
                   }}
                   fullWidth
                   slotProps={{
@@ -491,19 +514,8 @@ export default function AdminHomePage() {
                   label="メモ（任意）"
                   value={note}
                   onChange={(e) => {
-                    const newValue = e.target.value;
-                    setNote(newValue);
-                    const hasChanges = newValue !== originalNote || sales !== originalSales;
-                    setIsEdited(hasChanges);
-
-                    // 最初の編集時のみスナックバー警告を表示
-                    if (hasChanges && !isEdited) {
-                      setSnack({
-                        open: true,
-                        msg: "変更が保存されていません",
-                        sev: "warning"
-                      });
-                    }
+                    setNote(e.target.value);
+                    setIsEdited(true);
                   }}
                   multiline
                   rows={3}
@@ -521,59 +533,62 @@ export default function AdminHomePage() {
               </Box>
 
               <Stack spacing={2}>
-                <TextField
-                  label="金額（円）"
-                  type="text"
-                  value={foodCosts ?? ""}
-                  onChange={(e) => {
-                    // 全角数字を半角数字に変換
-                    const normalized = e.target.value
-                      .replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
-                      .replace(/[^0-9]/g, ''); // 数字以外を除去
-
-                    const newValue = normalized === "" ? null : Number(normalized);
-                    setFoodCosts(newValue);
-                    const hasChanges = newValue !== originalFoodCosts || foodNote !== originalFoodNote;
-                    setIsEdited(hasChanges);
-
-                    // 最初の編集時のみスナックバー警告を表示
-                    if (hasChanges && !isEdited) {
-                      setSnack({
-                        open: true,
-                        msg: "変更が保存されていません",
-                        sev: "warning"
-                      });
-                    }
-                  }}
-                  fullWidth
-                  slotProps={{
-                    input: {
-                      inputMode: "numeric"
-                    }
-                  }}
-                />
-                <TextField
-                  label="メモ（任意）"
-                  value={foodNote}
-                  onChange={(e) => {
-                    const newValue = e.target.value;
-                    setFoodNote(newValue);
-                    const hasChanges = newValue !== originalFoodNote || foodCosts !== originalFoodCosts;
-                    setIsEdited(hasChanges);
-
-                    // 最初の編集時のみスナックバー警告を表示
-                    if (hasChanges && !isEdited) {
-                      setSnack({
-                        open: true,
-                        msg: "変更が保存されていません",
-                        sev: "warning"
-                      });
-                    }
-                  }}
-                  multiline
-                  rows={3}
-                  fullWidth
-                />
+                {foodCostItems.map((item, index) => (
+                  <Box key={index} sx={{ border: '1px solid #e0e0e0', p: 1.5, borderRadius: 1 }}>
+                    <Stack spacing={1.5}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                          <InputLabel>カテゴリ</InputLabel>
+                          <Select
+                            value={item.category}
+                            label="カテゴリ"
+                            onChange={(e) => handleFoodCostItemChange(index, "category", e.target.value)}
+                          >
+                            {Object.entries(FOOD_CATEGORIES).map(([key, label]) => (
+                              <MenuItem key={key} value={key}>{label}</MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                        <TextField
+                          label="金額（円）"
+                          type="text"
+                          size="small"
+                          value={item.amount_yen}
+                          onChange={(e) => {
+                            handleFoodCostItemChange(index, "amount_yen", e.target.value);
+                          }}
+                          sx={{ flex: 1 }}
+                          slotProps={{
+                            input: {
+                              inputMode: "numeric"
+                            }
+                          }}
+                        />
+                        <IconButton
+                          onClick={() => removeFoodCostItem(index)}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Stack>
+                      <TextField
+                        label="メモ（任意）"
+                        size="small"
+                        value={item.note ?? ""}
+                        onChange={(e) => {
+                          handleFoodCostItemChange(index, "note", e.target.value);
+                        }}
+                        fullWidth
+                      />
+                    </Stack>
+                  </Box>
+                ))}
+                <Button startIcon={<AddCircleOutlineIcon />} onClick={addFoodCostItem}>
+                  項目を追加
+                </Button>
+                <Typography align="right" sx={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+                  合計: {fmtYen(totalFoodCosts)}
+                </Typography>
               </Stack>
 
               <Divider sx={{ my: 2 }} />
@@ -643,7 +658,7 @@ export default function AdminHomePage() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>食材費：</Typography>
                       <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {fmtYen(foodCosts)}
+                        {fmtYen(totalFoodCosts)}
                       </Typography>
                     </Box>
                     <Divider />
@@ -683,7 +698,7 @@ export default function AdminHomePage() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>食材費＋人件費：</Typography>
                       <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {fmtYen((foodCosts ?? 0) + totalWage)}
+                        {fmtYen((totalFoodCosts ?? 0) + totalWage)}
                       </Typography>
                     </Box>
                     <Divider />
@@ -706,7 +721,7 @@ export default function AdminHomePage() {
                 variant="contained"
                 type="submit"
                 disabled={loading}
-                sx ={{ '&:focus': { outline: 'none' } }}
+                sx={{ '&:focus': { outline: 'none' } }}
               >
                 {loading ? "保存中…" : "保存"}
               </Button>
