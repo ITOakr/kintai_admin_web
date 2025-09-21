@@ -313,6 +313,35 @@ export async function getMonthlyFLRatio(year: number, month: number) {
   }>;
 }
 
+// DailySummary APIのレスポンスの型定義
+export interface DailySummary {
+  date: string;
+  sales: number | null;
+  sales_note: string | null;
+  total_wage: number;
+  wage_rows: Array<{
+    user_id: number;
+    user_name: string;
+    base_hourly_wage: number;
+    work_minutes: number;
+    break_minutes: number;
+    night_minutes: number;
+    daily_wage: number;
+  }>;
+  food_costs_total: number;
+  l_ratio: number | null;
+  f_ratio: number | null;
+  f_l_ratio: number | null;
+}
+
+export async function getDailySummary(date: string): Promise<DailySummary> {
+  const u = new URL(`${BASE}/v1/daily_summary`);
+  u.searchParams.set("date", date);
+  const r = await fetch(u.toString(), { headers: authHeader() });
+  if (!r.ok) throw new Error(`GET /v1/daily_summary ${r.status}`);
+  return r.json() as Promise<DailySummary>;
+}
+
 // 操作ログの取得
 // 操作ログの型定義
 export interface AdminLog {

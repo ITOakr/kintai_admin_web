@@ -1,7 +1,7 @@
 // すでにログイン・adminチェックを通過している前提のメイン領域を差し替え
 import { useEffect, useMemo, useState } from "react";
 import { Form, useSearchParams } from "react-router-dom";
-import { getDailyTotal, getSales, putSales, getFoodCosts, FoodCostItem, putFoodCosts, getLRatio, getFRatio, getFLRatio } from "../lib/api.ts";
+import { getDailySummary, getFoodCosts,  putSales, FoodCostItem, putFoodCosts, DailySummary } from "../lib/api.ts";
 import SalesBreakdownChart from "../components/SalesBreakdownChart.tsx";
 import { Grid, Input, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import {
@@ -81,11 +81,7 @@ export default function AdminHomePage() {
     }
   };
 
-  // 人件費一覧
-  const [rows, setRows] = useState<
-    Awaited<ReturnType<typeof getDailyTotal>>["rows"]
-  >([]);
-  const [totalWage, setTotalWage] = useState<number>(0);
+  const [dailySummary, setDailySummary] = useState<DailySummary | null>(null);
 
   // 売上
   const [sales, setSales] = useState<number | null>(null);
@@ -97,16 +93,8 @@ export default function AdminHomePage() {
     return foodCostItems.reduce((sum, item) => sum + item.amount_yen, 0);
   }, [foodCostItems]);
 
-  // 比率
-  const [l_ratio, setLRatio] = useState<number | null>(null);
-  const [f_ratio, setFRatio] = useState<number | null>(null);
-  const [f_l_ratio, setFLratio] = useState<number | null>(null);
-
   // 編集状態の追跡
   const [isEdited, setIsEdited] = useState(false);
-  const [originalSales, setOriginalSales] = useState<number | null>(null);
-  const [originalNote, setOriginalNote] = useState<string>("");
-  const [originalFoodCostItems, setOriginalFoodCostItems] = useState<FoodCostItem[]>([]);
 
   const [snack, setSnack] = useState<{ open: boolean; msg: string; sev: "success" | "error" | "warning" }>({ open: false, msg: "", sev: "success" });
 
@@ -115,40 +103,21 @@ export default function AdminHomePage() {
       setLoading(true);
       setErr(null);
 
-      const dataFetchPromise = await Promise.all([
-        getDailyTotal(d),
-        getSales(d),
-        getFoodCosts(d),
-        getLRatio(d),
-        getFRatio(d),
-        getFLRatio(d)
-      ]);
-
-      const nimimumWaitPromise = new Promise(resolve => setTimeout(resolve, 500)); // 最低待機時間500ms
-
       const [apiResults] = await Promise.all([
-        dataFetchPromise,
-        nimimumWaitPromise
+        getDailySummary(d),
+        new Promise(resolve => setTimeout(resolve, 300)) // 最低待機時間300ms
       ]);
 
-      const [t, s, f, r, fr, flr] = apiResults;
-
-      setRows(t.rows);
-      setTotalWage(t.total_daily_wage);
-
-      setSales(s.amount_yen);
-      setNote(s.note ?? "");
-      setFoodCostItems(f);
-      setOriginalSales(s.amount_yen);
-      setOriginalNote(s.note ?? "");
-      setOriginalFoodCostItems(f);
-      setIsEdited(false);
-
-      setLRatio(r.l_ratio);
-      setFRatio(fr.f_ratio);
-      setFLratio(flr.f_l_ratio);
+      setDailySummary(apiResults);
+      setSales(apiResults.sales ?? null);
+      setNote(apiResults.sales_note ?? "");
+      const foodCosts = await getFoodCosts(d);
+      setFoodCostItems(foodCosts)
+      
+      setIsEdited(false)
     } catch (e: any) {
-      setErr(e?.message ?? "fetch failed");
+      setErr(e?.message ?? "データの取得に失敗しました");
+      setDailySummary(null);
     } finally {
       setLoading(false);
     }
@@ -184,45 +153,6 @@ export default function AdminHomePage() {
     setFoodCostItems(newItems);
     setIsEdited(true);
   };
-
-  async function saveSales() {
-    try {
-      setLoading(true);
-      setErr(null);
-      await putSales(date, Number(sales ?? 0), note || undefined);
-      // 保存後、最新の比率を再計算して反映
-      const r = await getLRatio(date);
-      setLRatio(r.l_ratio);
-      setOriginalSales(sales);
-      setOriginalNote(note);
-      setIsEdited(false);
-      setSnack({ open: true, msg: "売上を保存しました", sev: "success" });
-    } catch (e: any) {
-      setErr(e?.message ?? "save failed");
-      setSnack({ open: true, msg: "保存に失敗しました", sev: "error" });
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function saveFoodCosts() {
-    try {
-      setLoading(true);
-      setErr(null);
-      await putFoodCosts(date, foodCostItems);
-      // 保存後、最新の比率を再計算して反映
-      const fr = await getFRatio(date);
-      setFRatio(fr.f_ratio);
-      setOriginalFoodCostItems(foodCostItems);
-      setIsEdited(false);
-      setSnack({ open: true, msg: "食材費を保存しました", sev: "success" });
-    } catch (e: any) {
-      setErr(e?.message ?? "save failed");
-      setSnack({ open: true, msg: "保存に失敗しました", sev: "error" });
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function saveAll() {
     try {
@@ -263,7 +193,7 @@ export default function AdminHomePage() {
               </Box>
               <Button
                 variant="outlined"
-                onClick={() => refreshAll()}
+                onClick={() => refreshAll(date)}
                 type="button"
                 disabled={loading}
                 startIcon={<RefreshIcon />}
@@ -433,7 +363,7 @@ export default function AdminHomePage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((r) => (
+                {dailySummary?.wage_rows.map((r) => (
                   <TableRow key={r.user_id} hover>
                     <TableCell>{r.user_name} (ID:{r.user_id})</TableCell>
                     <TableCell align="right">{minutesToHM(r.work_minutes)}</TableCell>
@@ -443,7 +373,7 @@ export default function AdminHomePage() {
                     <TableCell align="right"><b>{fmtYen(r.daily_wage)}</b></TableCell>
                   </TableRow>
                 ))}
-                {rows.length === 0 && (
+                {!dailySummary || dailySummary.wage_rows.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} align="center" sx={{ color: "text.secondary" }}>
                       当日の勤務データがありません
@@ -459,7 +389,7 @@ export default function AdminHomePage() {
                     fontWeight: 'bold',
                     color: 'text.primary',
                     padding: '16px 12px'
-                  }}>{fmtYen(totalWage)}</TableCell>
+                  }}>{fmtYen(dailySummary?.total_wage)}</TableCell>
                 </TableRow>
               </TableFooter>
             </Table>
@@ -468,8 +398,8 @@ export default function AdminHomePage() {
 
         <Box sx={{ mt: 2 }}>
           <SalesBreakdownChart
-            sales={sales}
-            totalWage={totalWage}
+            sales={dailySummary?.sales ?? null}
+            totalWage={dailySummary?.total_wage ?? 0}
             foodCosts={totalFoodCosts}
           />
         </Box>
@@ -594,6 +524,7 @@ export default function AdminHomePage() {
               <Divider sx={{ my: 2 }} />
 
               <Stack spacing={4}>
+                {/* L比計算 */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                   <AssessmentIcon color="primary" sx={{ fontSize: 28 }} />
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
@@ -612,13 +543,13 @@ export default function AdminHomePage() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>売上：</Typography>
                       <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {fmtYen(sales)}
+                        {fmtYen(dailySummary?.sales ?? 0)}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>人件費：</Typography>
                       <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {fmtYen(totalWage)}
+                        {fmtYen(dailySummary?.total_wage ?? 0)}
                       </Typography>
                     </Box>
                     <Divider />
@@ -627,9 +558,9 @@ export default function AdminHomePage() {
                       <Typography sx={{
                         fontSize: '1.2rem',
                         fontWeight: 'bold',
-                        color: l_ratio && l_ratio >= 0.3 ? 'error.main' : 'success.main'
+                        color: dailySummary?.l_ratio && dailySummary?.l_ratio >= 0.3 ? 'error.main' : 'success.main'
                       }}>
-                        {l_ratio == null ? "-" : `${(l_ratio * 100).toFixed(2)} %`}
+                        {dailySummary?.l_ratio == null ? "-" : `${(dailySummary?.l_ratio * 100).toFixed(2)} %`}
                       </Typography>
                     </Box>
                   </Stack>
@@ -652,13 +583,13 @@ export default function AdminHomePage() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>売上：</Typography>
                       <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {fmtYen(sales)}
+                        {fmtYen(dailySummary?.sales ?? 0)}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>食材費：</Typography>
                       <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {fmtYen(totalFoodCosts)}
+                        {fmtYen(totalFoodCosts ?? 0)}
                       </Typography>
                     </Box>
                     <Divider />
@@ -667,9 +598,9 @@ export default function AdminHomePage() {
                       <Typography sx={{
                         fontSize: '1.2rem',
                         fontWeight: 'bold',
-                        color: f_ratio && f_ratio >= 0.3 ? 'error.main' : 'success.main'
+                        color: dailySummary?.f_ratio && dailySummary?.f_ratio >= 0.3 ? 'error.main' : 'success.main'
                       }}>
-                        {f_ratio == null ? "-" : `${(f_ratio * 100).toFixed(2)} %`}
+                        {dailySummary?.f_ratio == null ? "-" : `${(dailySummary?.f_ratio * 100).toFixed(2)} %`}
                       </Typography>
                     </Box>
                   </Stack>
@@ -698,7 +629,7 @@ export default function AdminHomePage() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>食材費＋人件費：</Typography>
                       <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {fmtYen((totalFoodCosts ?? 0) + totalWage)}
+                        {fmtYen((totalFoodCosts ?? 0) + (dailySummary?.total_wage ?? 0))}
                       </Typography>
                     </Box>
                     <Divider />
@@ -707,9 +638,9 @@ export default function AdminHomePage() {
                       <Typography sx={{
                         fontSize: '1.2rem',
                         fontWeight: 'bold',
-                        color: f_l_ratio && f_l_ratio >= 0.6 ? 'error.main' : 'success.main'
+                        color: dailySummary?.f_l_ratio && dailySummary?.f_l_ratio >= 0.6 ? 'error.main' : 'success.main'
                       }}>
-                        {f_l_ratio == null ? "-" : `${(f_l_ratio * 100).toFixed(2)} %`}
+                        {dailySummary?.f_l_ratio == null ? "-" : `${(dailySummary?.f_l_ratio * 100).toFixed(2)} %`}
                       </Typography>
                     </Box>
                   </Stack>
