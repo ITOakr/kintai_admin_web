@@ -9,8 +9,7 @@ import {
   Paper,
   TableFooter
 } from "@mui/material";
-import { useNavigate } from "react-router-dom"; 
-import { MonthlyData } from "../pages/MonthlyPage"; // 親から型定義をインポート
+import { useNavigate } from "react-router-dom";
 
 // --- このファイル内でしか使わないヘルパー関数 ---
 function fmtYen(n: number | null | undefined) {
@@ -45,9 +44,20 @@ function fmtDateCell({ dateStr }: { dateStr: string }) {
   );
 }
 
-// このコンポーネントが受け取るPropsの型定義
+// 1行分のデータの型
+interface MonthlyDataRow {
+  date: string;
+  daily_sales: number | null;
+  total_daily_wage: number;
+  daily_food_costs: number | null;
+  l_ratio: number | null;
+  f_ratio: number | null;
+  f_l_ratio: number | null;
+}
+
+// このコンポーネントが受け取るProps全体の型定義
 interface MonthlyReportTableProps {
-  rows: MonthlyData[];
+  rows: MonthlyDataRow[]; // 1行分のデータの配列
   monthSales: number | null;
   monthWage: number;
   monthFoodCosts: number | null;
@@ -131,8 +141,8 @@ export default function MonthlyReportTable({
                 </Box>
               </TableCell>
               <TableCell align="right">
-                <Box sx={{ color: row.fl_ratio && row.fl_ratio >= 0.6 ? 'error.main' : 'success.main', fontWeight: 'bold' }}>
-                  {fmtPct(row.fl_ratio)}
+                <Box sx={{ color: row.f_l_ratio && row.f_l_ratio >= 0.6 ? 'error.main' : 'success.main', fontWeight: 'bold' }}>
+                  {fmtPct(row.f_l_ratio)}
                 </Box>
               </TableCell>
             </TableRow>

@@ -333,13 +333,44 @@ export interface DailySummary {
   f_ratio: number | null;
   f_l_ratio: number | null;
 }
-
+// 日次サマリの取得
 export async function getDailySummary(date: string): Promise<DailySummary> {
   const u = new URL(`${BASE}/v1/daily_summary`);
   u.searchParams.set("date", date);
   const r = await fetch(u.toString(), { headers: authHeader() });
   if (!r.ok) throw new Error(`GET /v1/daily_summary ${r.status}`);
   return r.json() as Promise<DailySummary>;
+}
+
+// 月次サマリーAPIのレスポンスの型定義
+export interface MonthlySummaryResponse {
+  year: number;
+  month: number;
+  days: Array<{
+    date: string;
+    daily_sales: number | null;
+    total_daily_wage: number;
+    daily_food_costs: number;
+    l_ratio: number | null;
+    f_ratio: number | null;
+    f_l_ratio: number | null;
+  }>;
+  monthly_sales: number;
+  monthly_wage: number;
+  monthly_food_costs: number;
+  monthly_l_ratio: number | null;
+  monthly_f_ratio: number | null;
+  monthly_f_l_ratio: number | null;
+}
+
+// 新しい月次サマリーAPIを呼び出す関数
+export async function getMonthlySummary(year: number, month: number): Promise<MonthlySummaryResponse> {
+  const u = new URL(`${BASE}/v1/monthly_summary`);
+  u.searchParams.set("year", String(year));
+  u.searchParams.set("month", String(month));
+  const r = await fetch(u.toString(), { headers: authHeader() });
+  if (!r.ok) throw new Error(`GET /v1/monthly_summary ${r.status}`);
+  return r.json() as Promise<MonthlySummaryResponse>;
 }
 
 // 操作ログの取得
