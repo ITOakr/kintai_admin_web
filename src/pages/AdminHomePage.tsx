@@ -389,7 +389,7 @@ export default function AdminHomePage() {
                     fontWeight: 'bold',
                     color: 'text.primary',
                     padding: '16px 12px'
-                  }}>{fmtYen(dailySummary?.total_wage)}</TableCell>
+                  }}>{fmtYen(dailySummary?.total_wage ?? 0)}</TableCell>
                 </TableRow>
               </TableFooter>
             </Table>
