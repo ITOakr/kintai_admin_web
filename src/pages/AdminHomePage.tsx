@@ -112,7 +112,7 @@ export default function AdminHomePage() {
       setSales(apiResults.sales ?? null);
       setNote(apiResults.sales_note ?? "");
       const foodCosts = await getFoodCosts(d);
-      setFoodCostItems(foodCosts)
+      setFoodCostItems(foodCosts);
       
       setIsEdited(false)
     } catch (e: any) {
