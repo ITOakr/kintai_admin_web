@@ -312,3 +312,32 @@ export async function getMonthlyFLRatio(year: number, month: number) {
     monthly_f_l_ratio: number | null;
   }>;
 }
+
+// 操作ログの取得
+// 操作ログの型定義
+export interface AdminLog {
+  id: number;
+  created_at: string;
+  admin_user_name: string;
+  target_user_name: string | null;
+  action: string;
+  details: string;
+}
+
+// APIからのレスポンス全体の型定義
+export interface AdminLogResponse {
+  logs: AdminLog[];
+  total_count: number;
+  page: number;
+  per_page: number;
+}
+
+// 操作ログを取得するAPI関数
+export async function getAdminLogs(page: number, perPage: number): Promise<AdminLogResponse> {
+  const u = new URL(`${BASE}/v1/admin_logs`);
+  u.searchParams.set("page", String(page));
+  u.searchParams.set("per_page", String(perPage));
+  const r = await fetch(u.toString(), { headers: authHeader() });
+  if (!r.ok) throw new Error(`GET /v1/admin_logs ${r.status}`);
+  return r.json() as Promise<AdminLogResponse>;
+}
