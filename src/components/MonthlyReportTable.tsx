@@ -48,7 +48,7 @@ function fmtDateCell({ dateStr }: { dateStr: string }) {
 interface MonthlyDataRow {
   date: string;
   daily_sales: number | null;
-  total_daily_wage: number | null;
+  total_daily_wage: number;
   daily_food_costs: number | null;
   l_ratio: number | null;
   f_ratio: number | null;
