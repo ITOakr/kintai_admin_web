@@ -373,7 +373,7 @@ export default function AdminHomePage() {
                     <TableCell align="right"><b>{fmtYen(r.daily_wage)}</b></TableCell>
                   </TableRow>
                 ))}
-                {!dailySummary || dailySummary.wage_rows.length === 0 && (
+                {(!dailySummary || dailySummary.wage_rows.length === 0) && (
                   <TableRow>
                     <TableCell colSpan={6} align="center" sx={{ color: "text.secondary" }}>
                       当日の勤務データがありません
