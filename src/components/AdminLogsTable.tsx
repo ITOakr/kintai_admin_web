@@ -30,7 +30,15 @@ export default function AdminLogsTable() {
         setLogs(res.logs);
         setTotalCount(res.total_count); // 総件数を設定
       } catch (err) {
-        setError("ログの取得に失敗しました");
+        // エラー詳細を含めて表示
+        const errorMessage =
+          "ログの取得に失敗しました" +
+          (err && (typeof err === "object" && "message" in err)
+            ? `: ${(err as Error).message}`
+            : err
+            ? `: ${String(err)}`
+            : "");
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
