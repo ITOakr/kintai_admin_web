@@ -114,7 +114,7 @@ export default function AdminHomePage() {
       const foodCosts = await getFoodCosts(d);
       setFoodCostItems(foodCosts);
       
-      setIsEdited(false)
+      setIsEdited(false);
     } catch (e: any) {
       setErr(e?.message ?? "データの取得に失敗しました");
       setDailySummary(null);
