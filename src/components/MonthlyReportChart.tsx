@@ -82,14 +82,6 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
     });
   };
 
-  const handleChartItemClick = (event: React.MouseEvent, params: any) => {
-    if (params && params.dataIndex !== undefined && data?.days) {
-      const clickedDataIndex = params.dataIndex;
-      const targetDate = data.days[clickedDataIndex].date;
-      navigate(`/?date=${targetDate}`);
-    }
-  };
-
   // データがない場合の早期リターンは、フック呼び出しの後に置く
   if (!data || !data.days || data.days.length === 0) {
     return (
@@ -143,14 +135,15 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
               valueFormatter: (value) => `${value}%`,
             }]}
             series={seriesData.series}
-            onAxisClick={(event, axisData) => {
-              if (axisData && axisData.axisValue !== undefined && axisData.axisValue !== null) {
-                // xAxisのデータ（日付）から対応する日のデータを探す
-                const dayIndex = seriesData.xAxisData.findIndex(day => day === axisData.axisValue);
-                if (dayIndex !== -1 && data?.days) {
-                  const targetDate = data.days[dayIndex].date;
-                  navigate(`/?date=${targetDate}`);
-                  window.scrollTo(0, 0);
+            onAxisClick={(_, axisData) => { // ★ onItemClickの代わりにonAxisClickを使用
+              if (axisData && axisData.axisValue !== null && data?.days) {
+                // axisValueはクリックされたX軸の値（日付の数値）
+                const clickedDay = axisData.axisValue as number;
+                // 日付の数値から、対応する日付文字列を探す
+                const targetDayData = data.days.find(day => new Date(day.date).getDate() === clickedDay);
+                if (targetDayData) {
+                  navigate(`/?date=${targetDayData.date}`);
+                  window.scrollTo(0, 0); // 画面のトップにスクロール
                 }
               }
             }}
