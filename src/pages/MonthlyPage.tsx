@@ -4,6 +4,7 @@ import { getMonthlySummary, MonthlySummaryResponse } from "../lib/api";
 import MonthlyReportHeader from "../components/MonthlyReportHeader";
 import MonthlyReportTable from "../components/MonthlyReportTable";
 import ExcelDownloadButton from "../components/ExcelDownloadButton";
+import MonthlyReportChart from "../components/MonthlyReportChart";
 
 export default function MonthlyPage() {
   // --- 状態管理 (State) ---
@@ -107,6 +108,10 @@ export default function MonthlyPage() {
           />
         </CardContent>
       </Card>
+      {/* グラフコンポーネントを呼び出し */}
+      <MonthlyReportChart data={monthlySummary} />
+      {/* エクセルダウンロード用のコンポーネントを呼び出し */}
+      {/* ボタンは非表示にしておき、ヘッダーのエクスポートボタンからクリックされる */}
       <div style={{ display: 'none' }}>
         <ExcelDownloadButton
           data={formattedRowsforExcel}
