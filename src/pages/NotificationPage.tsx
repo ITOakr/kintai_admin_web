@@ -68,6 +68,7 @@ export default function NotificationPage({ onNotificationRead }: Props) {
           n.id === notification.id ? { ...n, read: true } : n
         ));
       } catch (err) {
+        console.error(err);
         setError('お知らせの更新に失敗しました');
         return;
       }
