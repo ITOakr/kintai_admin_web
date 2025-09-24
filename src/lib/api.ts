@@ -182,11 +182,27 @@ export async function putFoodCosts(date: string, foodCostItems: FoodCostItem[]) 
   return r.json() as Promise<FoodCostItem[]>;
 }
 
+export async function putDailyFixedCosts(date: string, employeeCount: number) {
+  const u = new URL(`${BASE}/v1/daily_fixed_costs`);
+  u.searchParams.set("date", date);
+  const body = new URLSearchParams({ full_time_employee_count: String(employeeCount) });
+  
+  const r = await fetch(u.toString(), {
+    method: "PUT",
+    headers: { ...authHeader(), "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+    body,
+  });
+  if (!r.ok) throw new Error(`PUT /v1/daily_fixed_costs ${r.status}`);
+  return r.json();
+}
+
 // DailySummary APIのレスポンスの型定義
 export interface DailySummary {
   date: string;
   sales: number | null;
   sales_note: string | null;
+  part_time_wage: number;
+  fixed_wage: number;
   total_wage: number;
   wage_rows: Array<{
     user_id: number;
@@ -198,6 +214,7 @@ export interface DailySummary {
     daily_wage: number;
   }>;
   food_costs_total: number;
+  full_time_employee_count: number;
   l_ratio: number | null;
   f_ratio: number | null;
   f_l_ratio: number | null;
