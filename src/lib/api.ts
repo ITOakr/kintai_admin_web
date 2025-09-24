@@ -288,3 +288,29 @@ export async function getAdminLogs(page: number, perPage: number): Promise<Admin
   if (!r.ok) throw new Error(`GET /v1/admin_logs ${r.status}`);
   return r.json() as Promise<AdminLogResponse>;
 }
+
+export interface Notification {
+  id: number;
+  message: string;
+  read: boolean;
+  notifiable_type: 'user_approval_request' | 'f_l_ratio_warning';
+  link_to: string;
+  created_at: string;
+}
+
+export async function getNotifications(): Promise<Notification[]> {
+  const u = new URL(`${BASE}/v1/notifications`);
+  const r = await fetch(u.toString(), { headers: authHeader() });
+  if (!r.ok) throw new Error(`GET /v1/notifications ${r.status}`);
+  return r.json();
+}
+
+export async function markNotificationAsRead(id: number): Promise<Notification> {
+  const u = new URL(`${BASE}/v1/notifications/${id}`);
+  const r = await fetch(u.toString(), {
+    method: "PATCH",
+    headers: authHeader(),
+  });
+  if (!r.ok) throw new Error(`PATCH /v1/notifications/${id} ${r.status}`);
+  return r.json();
+}
