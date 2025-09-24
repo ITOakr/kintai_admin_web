@@ -44,8 +44,12 @@ export default function NotificationPage({ onNotificationRead }: Props) {
       setLoading(true);
       const allNotifications = await getNotifications();
       setNotifications(allNotifications);
-    } catch (err: any) {
-      setError(err.message ?? 'お知らせの取得に失敗しました');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'message' in err && typeof (err as any).message === 'string') {
+        setError((err as { message: string }).message);
+      } else {
+        setError('お知らせの取得に失敗しました');
+      }
     } finally {
       setLoading(false);
     }
