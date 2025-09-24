@@ -1,32 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { BrowserRouter, Routes, Route, Link, Navigate, Outlet, useLocation } from "react-router-dom";
-import { me } from "./lib/api";
+import { me, getNotifications } from "./lib/api";
 import LoginPage from "./pages/LoginPage";
 import AdminHomePage from "./pages/AdminHomePage";
 import TimeEntrySearchPage from "./pages/TimeEntrySearchPage";
 import MonthlyPage from "./pages/MonthlyPage";
 import UserManagementPage from "./pages/UserManagementPage";
 import AdminLogPage from "./pages/AdminLogPage";
+import NotificationPage from "./pages/NotificationPage";
 
 import {
   AppBar, Toolbar, Typography, Container, Button, Stack, Card, CardContent, CardActions, Box,
-  Drawer, List, ListItem, ListItemIcon, ListItemText, ListItemButton, Divider
+  Drawer, List, ListItem, ListItemIcon, ListItemText, ListItemButton, Divider, Badge
 } from "@mui/material";
 import {
   Search as SearchIcon,
   Assessment as AssessmentIcon,
   Logout as LogoutIcon,
   GroupAdd as GroupAddIcon,
-  History as HistoryIcon
+  History as HistoryIcon,
+  Notifications as NotificationsIcon,
 } from "@mui/icons-material";
 import SavingsIcon from '@mui/icons-material/Savings';
 
 type Role = "employee" | "admin" | null;
 
 // サイドバーコンポーネントを分離
-function Sidebar({ onLogout }: { onLogout: () => void }) {
+function Sidebar({ onLogout, unreadCount }: { onLogout: () => void; unreadCount: number }) {
   const location = useLocation();
-  
+
   return (
     <Drawer
       variant="permanent"
@@ -44,10 +46,10 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
       <Box sx={{ overflow: 'auto' }}>
         <List>
           <ListItem disablePadding>
-            <ListItemButton 
-              component={Link} 
-              to="/" 
-              sx={{ 
+            <ListItemButton
+              component={Link}
+              to="/"
+              sx={{
                 color: 'primary.main',
                 backgroundColor: location.pathname === '/' ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
                 '& .MuiTypography-root': {
@@ -62,10 +64,10 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton 
-              component={Link} 
-              to="/search" 
-              sx={{ 
+            <ListItemButton
+              component={Link}
+              to="/search"
+              sx={{
                 color: 'primary.main',
                 backgroundColor: location.pathname === '/search' ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
                 '& .MuiTypography-root': {
@@ -80,10 +82,10 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton 
-              component={Link} 
-              to="/monthly" 
-              sx={{ 
+            <ListItemButton
+              component={Link}
+              to="/monthly"
+              sx={{
                 color: 'primary.main',
                 backgroundColor: location.pathname === '/monthly' ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
                 '& .MuiTypography-root': {
@@ -98,9 +100,9 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton 
-              component={Link} 
-              to="/users" 
+            <ListItemButton
+              component={Link}
+              to="/users"
               sx={{
                 color: 'primary.main',
                 backgroundColor: location.pathname === '/users' ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
@@ -116,8 +118,8 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
-            <ListItemButton 
-              component={Link} 
+            <ListItemButton
+              component={Link}
               to="/logs"
               sx={{
                 color: 'primary.main',
@@ -131,6 +133,26 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
                 <HistoryIcon color="primary" />
               </ListItemIcon>
               <ListItemText primary="操作ログ" />
+            </ListItemButton>
+          </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton
+              component={Link}
+              to="/notifications"
+              sx={{
+                color: 'primary.main',
+                backgroundColor: location.pathname === '/notifications' ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
+                '& .MuiTypography-root': {
+                  fontWeight: location.pathname === '/notifications' ? 'bold' : 'normal'
+                }
+              }}
+            >
+              <ListItemIcon>
+                <Badge badgeContent={unreadCount} color="error">
+                  <NotificationsIcon color="primary" />
+                </Badge>
+              </ListItemIcon>
+              <ListItemText primary="お知らせ" />
             </ListItemButton>
           </ListItem>
         </List>
@@ -152,7 +174,7 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
 
 function HeaderContent() {
   const location = useLocation();
-  
+
   const getPageTitle = () => {
     switch (location.pathname) {
       case '/':
@@ -165,6 +187,8 @@ function HeaderContent() {
         return { text: '従業員管理', icon: <GroupAddIcon /> };
       case '/logs':
         return { text: '操作ログ', icon: <HistoryIcon /> };
+      case '/notifications':
+        return { text: 'お知らせ', icon: <NotificationsIcon /> };
       default:
         return { text: '人件費計算', icon: <SavingsIcon /> };
     }
@@ -213,27 +237,53 @@ export default function App() {
   const [role, setRole] = useState<Role>(null);
   const [loadingRole, setLoadingRole] = useState(true);
   const [authErr, setAuthErr] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0); // 未読通知数の状態
+
+  const fetchNotifications = useCallback(async () => {
+    if (!token || role !== 'admin') {
+      return;
+    }
+    try {
+      const allNotifications = await getNotifications();
+      const unreadNotifications = allNotifications.filter(n => !n.read);
+      setUnreadCount(unreadNotifications.length);
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    }
+  }, [token, role]);
 
   // /auth/me でrole取得
   useEffect(() => {
-      if (!token) {
-        setRole(null);
-        setLoadingRole(false);
-        return;
-      }
+    if (!token) {
+      setRole(null);
+      setLoadingRole(false);
+      return;
+    }
 
-      setLoadingRole(true);
-      
-      me().then(user => {
-        setRole(user.role ?? null);
-      }).catch(e => {
-        setAuthErr(e.message ?? "トークンが無効です。再度ログインしてください。");
-        localStorage.removeItem("token");
-        setToken(null);
-      }).finally(() => {
-        setLoadingRole(false);
+    setLoadingRole(true);
+
+    me().then(user => {
+      setRole(user.role ?? null);
+    }).catch(e => {
+      setAuthErr(e.message ?? "トークンが無効です。再度ログインしてください。");
+      localStorage.removeItem("token");
+      setToken(null);
+    }).finally(() => {
+      setLoadingRole(false);
     });
   }, [token]);
+
+  useEffect(() => {
+    // ログインしていて管理者権限がある場合のみ実行
+    if (!token || role !== 'admin') {
+      return;
+    }
+
+    fetchNotifications(); // まず一度実行
+    const interval = setInterval(fetchNotifications, 30000); // 30秒ごとに再取得
+
+    return () => clearInterval(interval); // コンポーネントが不要になったらタイマーを解除
+  }, [fetchNotifications, token, role]);
 
   function handleLoginSuccess(newToken: string) {
     localStorage.setItem("token", newToken);
@@ -258,9 +308,9 @@ export default function App() {
   // 未ログイン：ログインカードを表示
   return (
     <BrowserRouter>
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
+      <Box sx={{
+        display: 'flex',
+        flexDirection: 'column',
         minHeight: '100vh',
         backgroundColor: '#f1f3f5' // より暗めのグレー
       }}>
@@ -268,27 +318,27 @@ export default function App() {
         {token && role === "admin" && (
           <>
             <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-              <Toolbar sx={{ 
+              <Toolbar sx={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center', 
+                alignItems: 'center',
               }}>
-                <Box sx={{ 
+                <Box sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  minWidth: {xs: 'auto', sm: '200px'}, 
-                  }}
+                  minWidth: { xs: 'auto', sm: '200px' },
+                }}
                 > {/* 左側の余白確保 */}
-                  <img 
-                    src="/FLan_logo.png" 
-                    alt="Logo" 
-                    style={{ 
-                      height: 50, 
+                  <img
+                    src="/FLan_logo.png"
+                    alt="Logo"
+                    style={{
+                      height: 50,
                       objectFit: 'contain'
                     }}
                   />
                 </Box>
-                <Box sx={{ 
+                <Box sx={{
                   position: 'absolute',
                   left: '50%',
                   transform: 'translateX(-50%)',
@@ -297,7 +347,7 @@ export default function App() {
                 }}>
                   <HeaderContent />
                 </Box>
-                <Box sx={{ 
+                <Box sx={{
                   minWidth: { xs: 'auto', sm: '200px' },
                   display: 'flex',
                   justifyContent: 'flex-end'
@@ -305,13 +355,13 @@ export default function App() {
                 </Box>
               </Toolbar>
             </AppBar>
-            <Sidebar onLogout={logout} />
+            <Sidebar onLogout={logout} unreadCount={unreadCount} />
           </>
         )}
 
-        <Box component="main" sx={{ 
-          flexGrow: 1, 
-          display: 'flex', 
+        <Box component="main" sx={{
+          flexGrow: 1,
+          display: 'flex',
           flexDirection: 'column',
           marginLeft: token && role === "admin" ? '240px' : 0,
           marginTop: token && role === "admin" ? '64px' : 0,
@@ -328,11 +378,12 @@ export default function App() {
             } />
             {/* 管理者向けページ */}
             <Route element={<AdminRoute role={role} />}>
-              <Route path="/" element={ <AdminHomePage /> } />
+              <Route path="/" element={<AdminHomePage />} />
               <Route path="/search" element={<Container maxWidth="xl" sx={{ py: 3 }}><TimeEntrySearchPage /></Container>} />
               <Route path="/monthly" element={<MonthlyPage />} />
               <Route path="/users" element={<UserManagementPage />} />
               <Route path="/logs" element={<AdminLogPage />} />
+              <Route path="/notifications" element={<NotificationPage onNotificationRead={fetchNotifications} />} />
             </Route>
 
             {/* 未ログイン時は/loginへ、ログイン済みで見つからないページは/へ */}
