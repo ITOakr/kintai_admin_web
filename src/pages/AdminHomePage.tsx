@@ -1,14 +1,14 @@
 // すでにログイン・adminチェックを通過している前提のメイン領域を差し替え
 import { useEffect, useMemo, useState } from "react";
 import { Form, useSearchParams } from "react-router-dom";
-import { getDailySummary, getFoodCosts,  putSales, FoodCostItem, putFoodCosts, DailySummary } from "../lib/api.ts";
+import { getDailySummary, getFoodCosts, putSales, FoodCostItem, putFoodCosts, putDailyFixedCosts, DailySummary } from "../lib/api.ts";
 import SalesBreakdownChart from "../components/SalesBreakdownChart.tsx";
 import { Grid, Input, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import {
   Card, CardContent, CardActions,
   Typography, TextField, Button, Divider,
   Table, TableHead, TableRow, TableCell, TableBody, TableFooter,
-  Snackbar, Alert, Stack, IconButton, Box, Popover
+  Snackbar, Alert, Stack, IconButton, Box, Popover, InputAdornment
 } from "@mui/material";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -81,6 +81,9 @@ export default function AdminHomePage() {
     }
   };
 
+  // 社員の人数を管理
+  const [employeeCount, setEmployeeCount] = useState(1);
+
   const [dailySummary, setDailySummary] = useState<DailySummary | null>(null);
 
   // 売上
@@ -111,9 +114,10 @@ export default function AdminHomePage() {
       setDailySummary(apiResults);
       setSales(apiResults.sales ?? null);
       setNote(apiResults.sales_note ?? "");
+      setEmployeeCount(apiResults.full_time_employee_count ?? 1);
       const foodCosts = await getFoodCosts(d);
       setFoodCostItems(foodCosts);
-      
+
       setIsEdited(false);
     } catch (e: any) {
       setErr(e?.message ?? "データの取得に失敗しました");
@@ -162,7 +166,8 @@ export default function AdminHomePage() {
       // 1. 売上と食材費の保存リクエストを同時に実行
       await Promise.all([
         putSales(date, Number(sales ?? 0), note || undefined),
-        putFoodCosts(date, foodCostItems)
+        putFoodCosts(date, foodCostItems),
+        putDailyFixedCosts(date, employeeCount)
       ]);
 
       // 2. 両方の保存が成功したら、すべてのデータを再取得して画面を完全に同期させる
@@ -382,14 +387,59 @@ export default function AdminHomePage() {
                 )}
               </TableBody>
               <TableFooter>
-                <TableRow sx={{ backgroundColor: '#f8f9fa' }}>
-                  <TableCell colSpan={5} align="right" sx={{ fontSize: '1.4rem', fontWeight: 'bold' }}>合計</TableCell>
-                  <TableCell align="right" sx={{
-                    fontSize: '1.6rem',
-                    fontWeight: 'bold',
-                    color: 'text.primary',
-                    padding: '16px 12px'
-                  }}>{fmtYen(dailySummary?.total_wage ?? 0)}</TableCell>
+                {/* アルバイト合計行 */}
+                <TableRow>
+                  <TableCell colSpan={5} align="right" sx={{ fontSize: '1.2rem', fontWeight: 'bold', borderBottom: 0 }}>
+                    アルバイト合計
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontSize: '1.2rem', fontWeight: 'bold', borderBottom: 0 }}>
+                    {fmtYen(dailySummary?.part_time_wage ?? 0)}
+                  </TableCell>
+                </TableRow>
+
+                {/* 社員の人件費計算行 */}
+                <TableRow>
+                  <TableCell colSpan={5} align="right" sx={{ verticalAlign: 'middle', borderBottom: 0, padding: '8px' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
+                      <Typography variant="body1" component="span" sx={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+                        社員数
+                      </Typography>
+                      <TextField
+                        type="number"
+                        size="small"
+                        value={employeeCount}
+                        onChange={(e) => {
+                          setEmployeeCount(Number(e.target.value) || 0);
+                          setIsEdited(true);
+                        }}
+                        InputProps={{
+                          endAdornment: <InputAdornment position="end">人</InputAdornment>,
+                          inputProps: { min: 0, style: { height: '25px', textAlign: 'left' }, autoComplete: 'off' }
+                        }}
+                        sx={{ 
+                          width: '100px',
+                        }}
+                      />
+                      <Typography variant="body2" component="span">
+                        × 10,800円 =
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontSize: '1.2rem', fontWeight: 'bold', verticalAlign: 'middle', borderBottom: 0, padding: '8px' }}>
+                    {fmtYen(dailySummary?.fixed_wage ?? 0)}
+                  </TableCell>
+                </TableRow>
+
+                {/* 総合計行 */}
+                <TableRow sx={{ backgroundColor: '#f0f7ff' }}>
+                  <TableCell colSpan={5} align="right" sx={{ border: 0, borderTop: '2px solid', borderColor: 'divider', padding: '12px' }}>
+                    <Typography sx={{ fontSize: '1.4rem', fontWeight: 'bold' }}>合計</Typography>
+                  </TableCell>
+                  <TableCell align="right" sx={{ border: 0, borderTop: '2px solid', borderColor: 'divider', padding: '12px' }}>
+                    <Typography sx={{ fontSize: '1.4rem', fontWeight: 'bold' }}>
+                      {fmtYen(dailySummary?.total_wage ?? 0)}
+                    </Typography>
+                  </TableCell>
                 </TableRow>
               </TableFooter>
             </Table>

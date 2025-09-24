@@ -91,7 +91,7 @@ export default function UserManagementPage() {
     setSelectedUser(user);
     setDialogMode(mode);
     setRole(user.role ?? 'employee');
-    setWage(user.base_hourly_wage || 1100); // デフォルト時給
+    setWage(user.base_hourly_wage || 1004); // デフォルト時給
   };
 
   const handleCloseDialog = () => {
