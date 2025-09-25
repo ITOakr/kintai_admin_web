@@ -370,7 +370,7 @@ export default function AdminHomePage() {
               <TableBody>
                 {dailySummary?.wage_rows.map((r) => (
                   <TableRow key={r.user_id} hover>
-                    <TableCell>{r.user_name} (ID:{r.user_id})</TableCell>
+                    <TableCell>{r.user_name}</TableCell>
                     <TableCell align="right">{minutesToHM(r.work_minutes)}</TableCell>
                     <TableCell align="right">{minutesToHM(r.break_minutes)}</TableCell>
                     <TableCell align="right">{minutesToHM(r.night_minutes)}</TableCell>
