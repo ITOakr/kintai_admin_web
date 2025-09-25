@@ -95,6 +95,8 @@ export default function AdminLogsTable() {
           setRowsPerPage(parseInt(e.target.value, 10));
           setPage(0);
         }}
+        labelRowsPerPage="表示件数"
+        labelDisplayedRows={({ from, to, count }) => `${count}件中 ${from}-${to}件`}
       />
     </Paper>
   );

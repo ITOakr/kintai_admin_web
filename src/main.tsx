@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { jaJP } from '@mui/x-date-pickers/locales';
 
 // Roboto フォント（MUI推奨）
 import "@fontsource/roboto/300.css";
@@ -28,7 +29,9 @@ const theme = createTheme({
     fontFamily: ['"Roboto"',"Noto Sans JP", "Helvetica", "Arial", "sans-serif"].join(","),
     fontSize: 18,
   },
-});
+},
+  jaJP,
+);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
