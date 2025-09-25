@@ -20,6 +20,7 @@ import {
   GroupAdd as GroupAddIcon,
   History as HistoryIcon,
   Notifications as NotificationsIcon,
+  Today as TodayIcon
 } from "@mui/icons-material";
 import SavingsIcon from '@mui/icons-material/Savings';
 
@@ -58,9 +59,9 @@ function Sidebar({ onLogout, unreadCount }: { onLogout: () => void; unreadCount:
               }}
             >
               <ListItemIcon>
-                <SavingsIcon color="primary" />
+                <TodayIcon color="primary" />
               </ListItemIcon>
-              <ListItemText primary="人件費計算" />
+              <ListItemText primary="日次レポート" />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
@@ -178,7 +179,7 @@ function HeaderContent() {
   const getPageTitle = () => {
     switch (location.pathname) {
       case '/':
-        return { text: '人件費計算', icon: <SavingsIcon /> };
+        return { text: '日次レポート', icon: <TodayIcon /> };
       case '/search':
         return { text: '勤怠検索', icon: <SearchIcon /> };
       case '/monthly':
