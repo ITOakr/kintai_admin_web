@@ -150,33 +150,26 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
       return colorAlreadySet;
     };
 
-    let intervalId: number | null = null;
-    
+    let observer: MutationObserver | null = null;
+
     // 初回実行
     const initialResult = updateAxisLabelColors();
-    
-    // 色が設定されていない場合のみ定期実行
-    if (!initialResult) {
-      intervalId = setInterval(() => {
+
+    // 色が設定されていない場合のみMutationObserverで監視
+    if (!initialResult && chartRef.current) {
+      observer = new MutationObserver(() => {
         const result = updateAxisLabelColors();
-        if (result && intervalId) {
-          clearInterval(intervalId);
-          intervalId = null;
+        if (result && observer) {
+          observer.disconnect();
+          observer = null;
         }
-      }, 100);
-      
-      // 5秒後に停止
-      setTimeout(() => {
-        if (intervalId) {
-          clearInterval(intervalId);
-          intervalId = null;
-        }
-      }, 5000);
+      });
+      observer.observe(chartRef.current, { childList: true, subtree: true });
     }
 
     return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
+      if (observer) {
+        observer.disconnect();
       }
     };
   }, [data, seriesData.dayOfWeekData, visibleSeries]);
