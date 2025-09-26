@@ -102,8 +102,6 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
 
       if (!tickLabels) return;
 
-      console.log('Found tick labels:', tickLabels.length); // デバッグ用
-
       // すでに色が設定済みかどうかをチェック
       let colorAlreadySet = false;
 
