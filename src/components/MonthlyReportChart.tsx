@@ -141,7 +141,6 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
             (label as SVGTextElement).classList.add('custom-weekend-color');
             (label as SVGTextElement).setAttribute('data-weekend-color', targetColor);
             
-            console.log(`Set ${textContent} to ${targetColor} - fill attr: ${(label as SVGTextElement).getAttribute('fill')}`);
           } else {
             colorAlreadySet = true;
           }
