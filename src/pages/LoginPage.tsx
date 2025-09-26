@@ -40,7 +40,7 @@ export default function LoginPage({ onLoginSuccess, initialError }: Props) {
         <Card sx={{ width: 380, maxWidth: "90vw", mt: 4 }} component="form" onSubmit={doLogin}>
           <CardContent>
             <Typography variant="h6" gutterBottom align="center" sx={{ fontWeight: 'bold' }}>
-              ログイン
+              管理者ログイン
             </Typography>
             <Stack spacing={2} sx={{ mt: 2 }}>
               <TextField
