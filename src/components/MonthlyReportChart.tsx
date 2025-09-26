@@ -118,7 +118,6 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
           const actualDate = data?.days?.find(d => new Date(d.date).getDate() === dayNumber);
           const actualDayOfWeek = actualDate ? new Date(actualDate.date).getDay() : null;
           
-          console.log(`Label: ${textContent}, Index: ${index}, Expected dayOfWeek: ${dayOfWeek}, Actual dayOfWeek: ${actualDayOfWeek}, Date: ${actualDate?.date}`);
           
           let targetColor = '#000000'; // 平日は黒色
           if (actualDayOfWeek === 0) { // Sunday
