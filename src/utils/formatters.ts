@@ -45,8 +45,8 @@ export function formatDateTime(isoString: string | null): string {
  * @returns フォーマットされた文字列（小数点以下2桁まで）。入力がnullやundefinedの場合は"-"を返します。
  */
 export function formatPercentage(value: number | null | undefined): string {
-    if (value == null) {
-        return "-";
-    }
-    return (value * 100).toFixed(2) + " %";
+  if (value == null) {
+    return "-";
+  }
+  return (value * 100).toFixed(2) + " %";
 }
