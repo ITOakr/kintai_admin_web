@@ -5,158 +5,119 @@ function authHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function login(email: string, password: string) {
-  const r = await fetch(`${BASE}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-    body: new URLSearchParams({ email, password }),
-  });
-  if (!r.ok) throw new Error(`login ${r.status}`);
-  return r.json() as Promise<{ token: string; user: { id: number; name: string; email: string } }>;
-}
+/**
+ * APIリクエストを送信するための共通ラッパー関数
+ * @param path リクエスト先のパス (例: "/users")
+ * @param options fetch APIに渡すオプション
+ */
+async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers = { ...authHeader(), ...(options.headers || {}) };
+  const response = await fetch(`${BASE}${path}`, { ...options, headers });
 
-export async function getPendingUsers() {
-  const r = await fetch(`${BASE}/users/pending`, { headers: authHeader() });
-  if (!r.ok) throw new Error(`GET /users/pending ${r.status}`);
-  return r.json() as Promise<Array<{ 
-    id:number;
-    email:string;
-    name:string;
-    created_at:string;
-  }>>;
-}
-
-export async function approveUser(userId: number, role: "employee" | "admin", base_hourly_wage: number) {
-  const u = new URL(`${BASE}/users/${userId}/approve`);
-  const body = new URLSearchParams({ role: role, base_hourly_wage: String(base_hourly_wage) });
-  const r = await fetch(u.toString(), {
-    method: "PATCH",
-    headers: { ...authHeader(), "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-    body,
-  });
-  if (!r.ok) {
-    const resBody = await r.json();
-    throw new Error(resBody?.errors?.join(", ") ?? `POST /users/${userId}/approve ${r.status}`);
+  if (!response.ok) {
+    let errorMsg = `API response failed: ${response.status}`;
+    try {
+      const resBody = await response.json();
+      errorMsg = resBody?.error ?? resBody?.errors?.join(", ") ?? errorMsg;
+    } catch (e) {
+      // JSONパースに失敗した場合はステータスコードを含むデフォルトのエラーメッセージを使用
+    }
+    throw new Error(errorMsg);
   }
-  return r.json() as Promise<{ message: string }>;
+  return response.json() as Promise<T>;
+}
+
+// 認証関連
+export async function login(email: string, password: string) {
+  interface AuthResponse { token: string; user: { id: number; name: string; email: string } };
+  return apiRequest<AuthResponse>("/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ auth: { email, password } }),
+  });
 }
 
 export async function me() {
-  const r = await fetch(`${BASE}/auth/me`, { headers: authHeader() });
-  if (!r.ok) throw new Error(`me ${r.status}`);
-  return r.json() as Promise<{ id:number; email:string; name:string; role?: "employee"|"admin" }>;
+  interface Me { id:number; email:string; name:string; role?: "employee"|"admin" };
+  return apiRequest<Me>("/auth/me");
+}
+
+// ユーザー管理関連
+export async function getPendingUsers() {
+  interface PendingUser { id: number; email: string; name: string; created_at: string };
+  return apiRequest<PendingUser[]>("/users/pending");
+}
+
+export async function approveUser(userId: number, role: "employee" | "admin", base_hourly_wage: number) {
+  const body = new URLSearchParams({ role: role, base_hourly_wage: String(base_hourly_wage) });
+  return apiRequest<{ message: string }>(`/users/${userId}/approve`, {
+    method: "POST",
+    headers: { "Content-interface": "application/x-www-form-urlencoded; charset=UTF-8" },
+    body,
+  });
 }
 
 export async function getUsers() {
-  const r = await fetch(`${BASE}/users`, { headers: authHeader() });
-  if (!r.ok) throw new Error(`GET /users ${r.status}`);
-  return r.json() as Promise<Array<{ 
-    id:number;
-    email:string;
-    name:string;
-    role:"employee"|"admin";
-    base_hourly_wage:number;
-    created_at:string;
-  }>>;
+  interface ActiveUser { id:number; email:string; name:string; role:"employee"|"admin"; base_hourly_wage:number; created_at:string; }
+  return apiRequest<ActiveUser[]>("/users");
 }
 
 export async function updateUser(userId: number, role: "employee" | "admin", base_hourly_wage: number) {
-  const u = new URL(`${BASE}/users/${userId}`);
   const body = new URLSearchParams({ role: role, base_hourly_wage: String(base_hourly_wage) });
-  const r = await fetch(u.toString(), {
+  return apiRequest<{ message: string }>(`/users/${userId}`, {
     method: "PATCH",
     headers: { ...authHeader(), "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
     body,
   });
-  if (!r.ok) {
-    const resBody = await r.json();
-    throw new Error(resBody?.errors?.join(", ") ?? `PATCH /users/${userId} ${r.status}`);
-  }
-  return r.json() as Promise<{ message: string }>;
 }
 
 export async function deleteUser(userId: number) {
-  const u = new URL(`${BASE}/users/${userId}`);
-  const r = await fetch(u.toString(), {
+  return apiRequest<{ message: string }>(`/users/${userId}`, {
     method: "DELETE",
-    headers: authHeader(),
   });
-  if (!r.ok) {
-    const resBody = await r.json();
-    throw new Error(resBody?.errors?.join(", ") ?? `DELETE /users/${userId} ${r.status}`);
-  }
-  return r.json() as Promise<{ message: string }>;
 }
 
+// 勤怠関連
 export async function getEntries(userId: number, date: string) {
-  const u = new URL(`${BASE}/v1/timeclock/time_entries`);
-  u.searchParams.set("user_id", String(userId));
-  u.searchParams.set("date", date);
-  const r = await fetch(u.toString(), { headers: authHeader() });
-  if (!r.ok) throw new Error(`GET /time_entries ${r.status}`);
-  return r.json() as Promise<Array<{
-    id:number; user_id:number; kind:string; happened_at:string; source:string;
-  }>>;
+  interface Entry { id:number; user_id:number; kind:string; happened_at:string; source:string; };
+  return apiRequest<Entry[]>(`/v1/attendance/entries?user_id=${userId}&date=${date}`);
 }
 
 export async function getDaily(userId: number, date: string) {
-  const u = new URL(`${BASE}/v1/attendance/my/daily`);
-  u.searchParams.set("user_id", String(userId));
-  u.searchParams.set("date", date);
-  const r = await fetch(u.toString(), { headers: authHeader() });
-  if (!r.ok) throw new Error(`GET /my/daily ${r.status}`);
-  return r.json() as Promise<{
+  interface DailyAttendance {
     date:string; actual:{start:string|null,end:string|null};
     totals:{work:number,break:number,overtime:number,night:number,holiday:number};
     status:"open"|"closed"|"not_started"|"inconsistent_data";
-  }>;
+  };
+  return apiRequest<DailyAttendance>(`/v1/attendance/my/daily?user_id=${userId}&date=${date}`);
 }
 
-// 売上　取得/保存（管理者）
+// 売上・食材費関連
+interface Sales { id?: number; date: string; amount_yen: number | null; note: string | null };
+
 export async function getSales(date: string) {
-  const u = new URL(`${BASE}/v1/sales`);
-  u.searchParams.set("date", date);
-  const r = await fetch(u.toString(), { headers: authHeader() });
-  if (!r.ok) throw new Error(`GET /v1/sales ${r.status}`);
-  return r.json() as Promise<{ date: string; amount_yen: number | null; note: string | null }>;
-}
-
-export interface FoodCostItem {
-  id?: number;
-  category: string;
-  amount_yen: number;
-  note: string | null;
-}
-
-// 食材費の取得/保存（管理者）
-export async function getFoodCosts(date: string) {
-  const u = new URL(`${BASE}/v1/food_costs`);
-  u.searchParams.set("date", date);
-  const r = await fetch(u.toString(), { headers: authHeader() });
-  if (!r.ok) throw new Error(`GET /v1/food_costs ${r.status}`);
-  return r.json() as Promise<FoodCostItem[]>;
+  return apiRequest<Sales>(`/v1/sales?date=${date}`);
 }
 
 export async function putSales(date: string, amount_yen: number, note?: string) {
-  const u = new URL(`${BASE}/v1/sales`);
-  u.searchParams.set("date", date);
   const body = new URLSearchParams({ amount_yen: String(amount_yen) });
   if (note) body.set("note", note);
-  const r = await fetch(u.toString(), {
+  return apiRequest<Sales>(`/v1/sales?date=${date}`, {
     method: "PUT",
-    headers: { ...authHeader(), "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+    headers: { ...authHeader(), "Content-interface": "application/x-www-form-urlencoded; charset=UTF-8" },
     body,
   });
-  if (!r.ok) throw new Error(`PUT /v1/sales ${r.status}`);
-  return r.json() as Promise<{ id: number; date: string; amount_yen: number; note?: string | null }>;
+}
+
+export interface FoodCostItem { id?: number; category: string; amount_yen: number; note: string | null; };
+
+export async function getFoodCosts(date: string) {
+  return apiRequest<FoodCostItem[]>(`/v1/food_costs?date=${date}`);
 }
 
 export async function putFoodCosts(date: string, foodCostItems: FoodCostItem[]) {
-  const u = new URL(`${BASE}/v1/food_costs`);
-  u.searchParams.set("date", date);
-
   const body = new URLSearchParams();
-  foodCostItems.forEach((item, index) => {
+  foodCostItems.forEach(item => {
     if (item.amount_yen > 0) {
       if (item.id) {
         body.append(`food_costs[][id]`, String(item.id));
@@ -168,32 +129,20 @@ export async function putFoodCosts(date: string, foodCostItems: FoodCostItem[]) 
       body.append(`food_costs[][note]`, item.note);
     }
   });
-
-  const r = await fetch(u.toString(), {
+  return apiRequest<FoodCostItem[]>(`/v1/food_costs?date=${date}`, {
     method: "PUT",
-    headers: { ...authHeader(), "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+    headers: { ...authHeader(), "Content-interface": "application/x-www-form-urlencoded; charset=UTF-8" },
     body,
   });
-  if (!r.ok) {
-    const resBody = await r.json();
-    const errorMsg = resBody?.errors?.join(", ") ?? `PUT /v1/food_costs ${r.status}`;
-    throw new Error(errorMsg);
-  }
-  return r.json() as Promise<FoodCostItem[]>;
 }
 
 export async function putDailyFixedCosts(date: string, employeeCount: number) {
-  const u = new URL(`${BASE}/v1/daily_fixed_costs`);
-  u.searchParams.set("date", date);
   const body = new URLSearchParams({ full_time_employee_count: String(employeeCount) });
-  
-  const r = await fetch(u.toString(), {
+  return apiRequest<any>(`/v1/daily_fixed_costs?date=${date}`, {
     method: "PUT",
-    headers: { ...authHeader(), "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+    headers: { ...authHeader(), "Content-interface": "application/x-www-form-urlencoded; charset=UTF-8" },
     body,
   });
-  if (!r.ok) throw new Error(`PUT /v1/daily_fixed_costs ${r.status}`);
-  return r.json();
 }
 
 // DailySummary APIのレスポンスの型定義
@@ -220,12 +169,8 @@ export interface DailySummary {
   f_l_ratio: number | null;
 }
 // 日次サマリの取得
-export async function getDailySummary(date: string): Promise<DailySummary> {
-  const u = new URL(`${BASE}/v1/daily_summary`);
-  u.searchParams.set("date", date);
-  const r = await fetch(u.toString(), { headers: authHeader() });
-  if (!r.ok) throw new Error(`GET /v1/daily_summary ${r.status}`);
-  return r.json() as Promise<DailySummary>;
+export async function getDailySummary(date: string) {
+  return apiRequest<DailySummary>(`/v1/daily_summary?date=${date}`);
 }
 
 // 月次サマリーAPIのレスポンスの型定義
@@ -251,16 +196,11 @@ export interface MonthlySummaryResponse {
 }
 
 // 新しい月次サマリーAPIを呼び出す関数
-export async function getMonthlySummary(year: number, month: number): Promise<MonthlySummaryResponse> {
-  const u = new URL(`${BASE}/v1/monthly_summary`);
-  u.searchParams.set("year", String(year));
-  u.searchParams.set("month", String(month));
-  const r = await fetch(u.toString(), { headers: authHeader() });
-  if (!r.ok) throw new Error(`GET /v1/monthly_summary ${r.status}`);
-  return r.json() as Promise<MonthlySummaryResponse>;
+export async function getMonthlySummary(year: number, month: number) {
+  return apiRequest<MonthlySummaryResponse>(`/v1/monthly_summary?year=${year}&month=${month}`);
 }
 
-// 操作ログの取得
+// 操作ログ,通知関連
 // 操作ログの型定義
 export interface AdminLog {
   id: number;
@@ -280,37 +220,25 @@ export interface AdminLogResponse {
 }
 
 // 操作ログを取得するAPI関数
-export async function getAdminLogs(page: number, perPage: number): Promise<AdminLogResponse> {
-  const u = new URL(`${BASE}/v1/admin_logs`);
-  u.searchParams.set("page", String(page));
-  u.searchParams.set("per_page", String(perPage));
-  const r = await fetch(u.toString(), { headers: authHeader() });
-  if (!r.ok) throw new Error(`GET /v1/admin_logs ${r.status}`);
-  return r.json() as Promise<AdminLogResponse>;
+export async function getAdminLogs(page: number, perPage: number) {
+  return apiRequest<AdminLogResponse>(`/v1/admin_logs?page=${page}&per_page=${perPage}`);
 }
 
 export interface Notification {
   id: number;
   message: string;
   read: boolean;
-  notifiable_type: 'user_approval_request' | 'f_l_ratio_warning';
+  notifiable_interface: 'user_approval_request' | 'f_l_ratio_warning';
   link_to: string;
   created_at: string;
 }
 
-export async function getNotifications(): Promise<Notification[]> {
-  const u = new URL(`${BASE}/v1/notifications`);
-  const r = await fetch(u.toString(), { headers: authHeader() });
-  if (!r.ok) throw new Error(`GET /v1/notifications ${r.status}`);
-  return r.json();
+export async function getNotifications() {
+  return apiRequest<Notification[]>(`/v1/notifications`);
 }
 
-export async function markNotificationAsRead(id: number): Promise<Notification> {
-  const u = new URL(`${BASE}/v1/notifications/${id}`);
-  const r = await fetch(u.toString(), {
+export async function markNotificationAsRead(id: number) {
+  return apiRequest<Notification>(`/v1/notifications/${id}`, {
     method: "PATCH",
-    headers: authHeader(),
   });
-  if (!r.ok) throw new Error(`PATCH /v1/notifications/${id} ${r.status}`);
-  return r.json();
 }
