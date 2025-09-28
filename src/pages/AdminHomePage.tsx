@@ -27,7 +27,7 @@ import {
   AddCircleOutline as AddCircleOutlineIcon,
   Delete as DeleteIcon
 } from "@mui/icons-material";
-import { formatYen, minutesToHM } from "../utils/formatters.ts";
+import { formatYen, minutesToHM } from "../utils/formatters";
 
 const FOOD_CATEGORIES = {
   meat: "肉類",
