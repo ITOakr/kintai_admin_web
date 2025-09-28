@@ -1,22 +1,9 @@
-// src/pages/TimeEntrySearchPage.tsx
-
 import { useState } from "react";
 import { getEntries, getDaily } from "../lib/api";
+import { formatDateTime, minutesToHM } from "../utils/formatters";
 
 type Entry = Awaited<ReturnType<typeof getEntries>>[number];
 type Daily = Awaited<ReturnType<typeof getDaily>>;
-
-function fmt(t: string | null) {
-  if (!t) return "-";
-  const d = new Date(t);
-  return d.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
-}
-
-function minutesToHM(min: number) {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return `${h}時間${m}分`;
-}
 
 export default function TimeEntrySearchPage() {
   const [userId, setUserId] = useState(1);
@@ -63,9 +50,9 @@ export default function TimeEntrySearchPage() {
         {daily ? (
           <ul>
             <li>status: <b>{daily.status}</b></li>
-            <li>start: {fmt(daily.actual.start)}</li>
-            <li>end: {fmt(daily.actual.end)}</li>
-            <li>work: {daily.totals.work} 分 / break: {daily.totals.break} 分</li>
+            <li>start: {formatDateTime(daily.actual.start)}</li>
+            <li>end: {formatDateTime(daily.actual.end)}</li>
+            <li>work: {minutesToHM(daily.totals.work)} / break: {minutesToHM(daily.totals.break)}</li>
           </ul>
         ) : <p>データがありません</p>}
       </section>
@@ -81,7 +68,7 @@ export default function TimeEntrySearchPage() {
               <tr key={e.id} style={{borderTop:"1px solid #eee"}}>
                 <td>{e.id}</td>
                 <td>{e.kind}</td>
-                <td>{fmt(e.happened_at)}</td>
+                <td>{formatDateTime(e.happened_at)}</td>
                 <td>{e.source}</td>
               </tr>
             ))}

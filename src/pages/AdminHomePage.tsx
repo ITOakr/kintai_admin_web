@@ -27,18 +27,7 @@ import {
   AddCircleOutline as AddCircleOutlineIcon,
   Delete as DeleteIcon
 } from "@mui/icons-material";
-import { set } from "date-fns";
-import { data } from "react-router-dom";
-
-function fmtYen(n: number | null | undefined) {
-  if (n == null) return "-";
-  return n.toLocaleString("ja-JP") + " 円";
-}
-function minutesToHM(min: number) {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return `${h}時間${m}分`;
-}
+import { formatYen, minutesToHM } from "../utils/formatters.ts";
 
 const FOOD_CATEGORIES = {
   meat: "肉類",
@@ -374,8 +363,8 @@ export default function AdminHomePage() {
                     <TableCell align="right">{minutesToHM(r.work_minutes)}</TableCell>
                     <TableCell align="right">{minutesToHM(r.break_minutes)}</TableCell>
                     <TableCell align="right">{minutesToHM(r.night_minutes)}</TableCell>
-                    <TableCell align="right">{fmtYen(r.base_hourly_wage)}</TableCell>
-                    <TableCell align="right"><b>{fmtYen(r.daily_wage)}</b></TableCell>
+                    <TableCell align="right">{formatYen(r.base_hourly_wage)}</TableCell>
+                    <TableCell align="right"><b>{formatYen(r.daily_wage)}</b></TableCell>
                   </TableRow>
                 ))}
                 {(!dailySummary || dailySummary.wage_rows.length === 0) && (
@@ -393,7 +382,7 @@ export default function AdminHomePage() {
                     アルバイト合計
                   </TableCell>
                   <TableCell align="right" sx={{ fontSize: '1.2rem', fontWeight: 'bold', borderBottom: 0 }}>
-                    {fmtYen(dailySummary?.part_time_wage ?? 0)}
+                    {formatYen(dailySummary?.part_time_wage ?? 0)}
                   </TableCell>
                 </TableRow>
 
@@ -416,7 +405,7 @@ export default function AdminHomePage() {
                           endAdornment: <InputAdornment position="end">人</InputAdornment>,
                           inputProps: { min: 0, style: { height: '25px', textAlign: 'left' }, autoComplete: 'off' }
                         }}
-                        sx={{ 
+                        sx={{
                           width: '100px',
                         }}
                       />
@@ -426,7 +415,7 @@ export default function AdminHomePage() {
                     </Box>
                   </TableCell>
                   <TableCell align="right" sx={{ fontSize: '1.2rem', fontWeight: 'bold', verticalAlign: 'middle', borderBottom: 0, padding: '8px' }}>
-                    {fmtYen(dailySummary?.fixed_wage ?? 0)}
+                    {formatYen(dailySummary?.fixed_wage ?? 0)}
                   </TableCell>
                 </TableRow>
 
@@ -437,7 +426,7 @@ export default function AdminHomePage() {
                   </TableCell>
                   <TableCell align="right" sx={{ border: 0, borderTop: '2px solid', borderColor: 'divider', padding: '12px' }}>
                     <Typography sx={{ fontSize: '1.4rem', fontWeight: 'bold' }}>
-                      {fmtYen(dailySummary?.total_wage ?? 0)}
+                      {formatYen(dailySummary?.total_wage ?? 0)}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -567,7 +556,7 @@ export default function AdminHomePage() {
                   項目を追加
                 </Button>
                 <Typography align="right" sx={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
-                  合計: {fmtYen(totalFoodCosts)}
+                  合計: {formatYen(totalFoodCosts)}
                 </Typography>
               </Stack>
 
@@ -593,13 +582,13 @@ export default function AdminHomePage() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>売上：</Typography>
                       <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {fmtYen(dailySummary?.sales ?? 0)}
+                        {formatYen(dailySummary?.sales ?? 0)}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>人件費：</Typography>
                       <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {fmtYen(dailySummary?.total_wage ?? 0)}
+                        {formatYen(dailySummary?.total_wage ?? 0)}
                       </Typography>
                     </Box>
                     <Divider />
@@ -633,13 +622,13 @@ export default function AdminHomePage() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>売上：</Typography>
                       <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {fmtYen(dailySummary?.sales ?? 0)}
+                        {formatYen(dailySummary?.sales ?? 0)}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>食材費：</Typography>
                       <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {fmtYen(totalFoodCosts ?? 0)}
+                        {formatYen(totalFoodCosts ?? 0)}
                       </Typography>
                     </Box>
                     <Divider />
@@ -673,13 +662,13 @@ export default function AdminHomePage() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>売上：</Typography>
                       <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {fmtYen(sales)}
+                        {formatYen(sales)}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography sx={{ color: 'text.secondary' }}>食材費＋人件費：</Typography>
                       <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {fmtYen((totalFoodCosts ?? 0) + (dailySummary?.total_wage ?? 0))}
+                        {formatYen((totalFoodCosts ?? 0) + (dailySummary?.total_wage ?? 0))}
                       </Typography>
                     </Box>
                     <Divider />
