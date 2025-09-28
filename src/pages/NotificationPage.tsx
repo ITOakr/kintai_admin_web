@@ -17,21 +17,11 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
+import { formatDateTime } from '../utils/formatters';
 
 type Props = {
   onNotificationRead: () => void;
 };
-
-// 時間を見やすい形式にフォーマットする関数
-function formatDateTime(isoString: string) {
-  return new Date(isoString).toLocaleString('ja-JP', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 export default function NotificationPage({ onNotificationRead }: Props) {
   const [notifications, setNotifications] = useState<NotificationType[]>([]);

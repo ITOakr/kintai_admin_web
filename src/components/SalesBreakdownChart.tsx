@@ -1,17 +1,12 @@
 import { PieChart } from '@mui/x-charts/PieChart';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import DataUsageIcon from '@mui/icons-material/DataUsage';
+import { formatYen } from '../utils/formatters';
 
 interface SalesBreakdownChartProps {
   sales: number | null;
   totalWage: number;
   foodCosts: number;
-}
-
-// 金額をフォーマットするヘルパー関数
-function fmtYen(n: number | null | undefined) {
-  if (n == null) return "-";
-  return n.toLocaleString("ja-JP") + " 円";
 }
 
 const CustomLegend = ({ data, colors }: { data: any[]; colors: string[] }) => (
@@ -83,7 +78,7 @@ export default function SalesBreakdownChart({ sales, totalWage, foodCosts }: Sal
             売上構成
           </Typography>
         </Box>
-        
+
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 600 }}>
           <Box sx={{ position: 'relative', width: '70%' }}>
             <PieChart
@@ -118,7 +113,7 @@ export default function SalesBreakdownChart({ sales, totalWage, foodCosts }: Sal
                 売上
               </Typography>
               <Typography component="div" variant="h4" sx={{ fontWeight: 'bold' }}>
-                {fmtYen(sales)}
+                {formatYen(sales)}
               </Typography>
             </Box>
           </Box>

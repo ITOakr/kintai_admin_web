@@ -1,15 +1,7 @@
 import { useEffect, useState } from "react";
 import { getAdminLogs, AdminLog } from "../lib/api";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress, Typography, Alert, TablePagination, Box } from "@mui/material";
-
-// 日時を見やすい形式にフォーマットする関数
-function formatDateTime(isoString: string) {
-  if (!isoString) return "-";
-  return new Date(isoString).toLocaleString("ja-JP", {
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  });
-}
+import { formatDateTime } from "../utils/formatters";
 
 export default function AdminLogsTable() {
   const [logs, setLogs] = useState<AdminLog[]>([]);

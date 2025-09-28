@@ -1,5 +1,5 @@
-import { 
-  Box, 
+import {
+  Box,
   Table,
   TableBody,
   TableCell,
@@ -10,16 +10,8 @@ import {
   TableFooter
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { formatYen, formatPercentage } from "../utils/formatters";
 
-// --- このファイル内でしか使わないヘルパー関数 ---
-function fmtYen(n: number | null | undefined) {
-  if (n == null) return "-";
-  return n.toLocaleString("ja-JP") + " 円";
-}
-function fmtPct(x: number | null | undefined) {
-  if (x == null) return "-";
-  return (x * 100).toFixed(2) + " %";
-}
 function fmtDateCell({ dateStr }: { dateStr: string }) {
   const date = new Date(dateStr);
   const day = date.getDate();
@@ -80,8 +72,8 @@ export default function MonthlyReportTable({
     navigate(`/?date=${date}`);
   }
   return (
-    <TableContainer component={Paper} elevation={0} sx={{ 
-      border: '2px solid #e0e0e0', 
+    <TableContainer component={Paper} elevation={0} sx={{
+      border: '2px solid #e0e0e0',
       maxHeight: 'calc(100vh - 200px)',
       '&::-webkit-scrollbar': { width: '8px' },
       '&::-webkit-scrollbar-track': { background: '#f1f1f1' },
@@ -90,13 +82,13 @@ export default function MonthlyReportTable({
     }}>
       <Table stickyHeader sx={{
         tableLayout: 'fixed',
-        '& th, & td': { 
-          border: '1px solid #e0e0e0', 
-          padding: '7px 10px' 
+        '& th, & td': {
+          border: '1px solid #e0e0e0',
+          padding: '7px 10px'
         },
-        '& th': { 
-          backgroundColor: '#f5f5f5', 
-          fontWeight: 'bold', 
+        '& th': {
+          backgroundColor: '#f5f5f5',
+          fontWeight: 'bold',
           fontSize: '1.25rem',
           color: '#424242'
         },
@@ -115,11 +107,11 @@ export default function MonthlyReportTable({
         </TableHead>
         <TableBody>
           {rows.map((row) => (
-            <TableRow 
-              key={row.date} 
-              hover 
+            <TableRow
+              key={row.date}
+              hover
               onClick={() => handleRowClick(row.date)}
-              sx={{ 
+              sx={{
                 '&:hover': { bgcolor: '#f8f9fa' },
                 cursor: 'pointer'
               }}
@@ -127,22 +119,22 @@ export default function MonthlyReportTable({
               <TableCell>
                 {fmtDateCell({ dateStr: row.date }) }
               </TableCell>
-              <TableCell align="right">{fmtYen(row.daily_sales)}</TableCell>
-              <TableCell align="right">{fmtYen(row.total_daily_wage)}</TableCell>
-              <TableCell align="right">{fmtYen(row.daily_food_costs)}</TableCell>
+              <TableCell align="right">{formatYen(row.daily_sales)}</TableCell>
+              <TableCell align="right">{formatYen(row.total_daily_wage)}</TableCell>
+              <TableCell align="right">{formatYen(row.daily_food_costs)}</TableCell>
               <TableCell align="right">
                 <Box sx={{ color: row.l_ratio && row.l_ratio >= 0.3 ? 'error.main' : 'success.main', fontWeight: 'bold' }}>
-                  {fmtPct(row.l_ratio)}
+                  {formatPercentage(row.l_ratio)}
                 </Box>
               </TableCell>
               <TableCell align="right">
                 <Box sx={{ color: row.f_ratio && row.f_ratio >= 0.3 ? 'error.main' : 'success.main', fontWeight: 'bold' }}>
-                  {fmtPct(row.f_ratio)}
+                  {formatPercentage(row.f_ratio)}
                 </Box>
               </TableCell>
               <TableCell align="right">
                 <Box sx={{ color: row.f_l_ratio && row.f_l_ratio >= 0.6 ? 'error.main' : 'success.main', fontWeight: 'bold' }}>
-                  {fmtPct(row.f_l_ratio)}
+                  {formatPercentage(row.f_l_ratio)}
                 </Box>
               </TableCell>
             </TableRow>
@@ -161,22 +153,22 @@ export default function MonthlyReportTable({
               月間合計
             </TableCell>
             <TableCell align="right" sx={{ position: 'sticky', bottom: 0, bgcolor: '#e3f2fd', borderTop: '2px solid #1976d2', fontWeight: 'bold', color: 'primary.main', fontSize: '1rem' }}>
-              {fmtYen(monthSales)}
+              {formatYen(monthSales)}
             </TableCell>
             <TableCell align="right" sx={{ position: 'sticky', bottom: 0, bgcolor: '#e3f2fd', borderTop: '2px solid #1976d2', fontWeight: 'bold', color: 'primary.main', fontSize: '1rem' }}>
-              {fmtYen(monthWage)}
+              {formatYen(monthWage)}
             </TableCell>
             <TableCell align="right" sx={{ position: 'sticky', bottom: 0, bgcolor: '#e3f2fd', borderTop: '2px solid #1976d2', fontWeight: 'bold', color: 'primary.main', fontSize: '1rem' }}>
-              {fmtYen(monthFoodCosts)}
+              {formatYen(monthFoodCosts)}
             </TableCell>
             <TableCell align="right" sx={{ position: 'sticky', bottom: 0, bgcolor: '#e3f2fd', borderTop: '2px solid #1976d2', fontWeight: 'bold', color: monthLRatio && monthLRatio >= 0.3 ? 'error.main' : 'success.main', fontSize: '1rem' }}>
-              {fmtPct(monthLRatio)}
+              {formatPercentage(monthLRatio)}
             </TableCell>
             <TableCell align="right" sx={{ position: 'sticky', bottom: 0, bgcolor: '#e3f2fd', borderTop: '2px solid #1976d2', fontWeight: 'bold', color: monthFRatio && monthFRatio >= 0.3 ? 'error.main' : 'success.main', fontSize: '1rem' }}>
-              {fmtPct(monthFRatio)}
+              {formatPercentage(monthFRatio)}
             </TableCell>
             <TableCell align="right" sx={{ position: 'sticky', bottom: 0, bgcolor: '#e3f2fd', borderTop: '2px solid #1976d2', fontWeight: 'bold', color: monthFLRatio && monthFLRatio >= 0.6 ? 'error.main' : 'success.main', fontSize: '1rem' }}>
-              {fmtPct(monthFLRatio)}
+              {formatPercentage(monthFLRatio)}
             </TableCell>
           </TableRow>
         </TableFooter>
