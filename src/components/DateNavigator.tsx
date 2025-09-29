@@ -26,35 +26,35 @@ export default function DateNavigator({ date, onDateChange }: DateNavigatorProps
 
   const handleDateClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
-  }
+  };
 
   const handleCalendarClose = () => {
     setAnchorEl(null);
-  }
+  };
 
   const handleCalendarChange = (newDate: Date | null ) => {
     if (newDate) {
       onDateChange(newDate.toISOString().slice(0,10));
       handleCalendarClose();
     }
-  }
+  };
 
   const handlePrevDay = () => {
     const newDate = new Date(date);
     newDate.setDate(newDate.getDate() - 1);
     onDateChange(newDate.toISOString().slice(0,10));
-  }
+  };
 
   const handleNextDay = () => {
     const newDate = new Date(date);
     newDate.setDate(newDate.getDate() + 1);
     onDateChange(newDate.toISOString().slice(0,10));
-  }
+  };
 
   const handleToday = () => {
     const today = new Date();
     onDateChange(today.toISOString().slice(0,10));
-  }
+  };
 
   const selectedDate = new Date(date);
   const today = new Date();
