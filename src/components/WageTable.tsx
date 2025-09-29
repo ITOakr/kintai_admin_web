@@ -1,4 +1,4 @@
-import { DailySummary } from "../lib/api.ts";
+import { DailySummary } from "../lib/api";
 import {
   Typography, TextField,
   Table, TableHead, TableRow, TableCell, TableBody, TableFooter,
