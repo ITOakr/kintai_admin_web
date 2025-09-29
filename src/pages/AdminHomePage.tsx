@@ -28,6 +28,7 @@ import {
   Delete as DeleteIcon
 } from "@mui/icons-material";
 import { formatYen, minutesToHM } from "../utils/formatters";
+import DateNavigator from "../components/DateNavigator";
 
 const FOOD_CATEGORIES = {
   meat: "肉類",
@@ -47,27 +48,10 @@ export default function AdminHomePage() {
   });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const calendarOpen = Boolean(anchorEl);
-
-  const handleDateClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleCalendarClose = () => {
-    setAnchorEl(null);
-  };
 
   const updateDate = (newDate: string) => {
     setDate(newDate);
     setSearchParams({ date: newDate });
-  };
-
-  const handleDateChange = (newDate: Date | null) => {
-    if (newDate) {
-      updateDate(newDate.toISOString().slice(0, 10));
-      handleCalendarClose();
-    }
   };
 
   // 社員の人数を管理
@@ -198,130 +182,7 @@ export default function AdminHomePage() {
               </Button>
             </Box>
 
-            <Stack direction="column" spacing={1} alignItems="center">
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'stretch',
-                  mb: 2,
-                  height: '42px'
-                }}
-              >
-                <Button
-                  onClick={(e) => {
-                    const newDate = new Date(date);
-                    newDate.setDate(newDate.getDate() - 1);
-                    updateDate(newDate.toISOString().slice(0, 10));
-                    e.currentTarget.blur();
-                  }}
-                  sx={{
-                    bgcolor: '#f8f9fa',
-                    border: 1,
-                    borderColor: 'divider',
-                    borderRadius: '4px 0 0 4px',
-                    borderRight: 0,
-                    minWidth: '50px',
-                    '&:hover': { bgcolor: '#e9ecef' },
-                    '&:focus': { outline: 'none' }
-                  }}
-                >
-                  <ChevronLeftIcon />
-                </Button>
-                <Button
-                  onClick={(e) => {
-                    const newDate = new Date();
-                    newDate.setDate(newDate.getDate());
-                    updateDate(newDate.toISOString().slice(0, 10));
-                    e.currentTarget.blur();
-                  }}
-                  sx={{
-                    bgcolor: '#f8f9fa',
-                    border: 1,
-                    borderColor: 'divider',
-                    borderRadius: '4px',
-                    minWidth: '50px',
-                    '&:hover': { bgcolor: '#e9ecef' },
-                    '&:focus': { outline: 'none' }
-                  }}
-                >
-                  <FiberManualRecordIcon sx={{ fontSize: 12, color: '#1976d2' }} />
-                </Button>
-                <Box
-                  onClick={handleDateClick}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    bgcolor: '#f8f9fa',
-                    borderTop: 1,
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                    px: 3,
-                    minWidth: '300px',
-                    cursor: 'pointer',
-                    '&:hover': { bgcolor: '#e9ecef' },
-                  }}>
-                  {(() => {
-                    const selectedDate = new Date(date);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    selectedDate.setHours(0, 0, 0, 0);
-
-                    const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
-                    const dateString = `${selectedDate.getFullYear()}年${selectedDate.getMonth() + 1}月${selectedDate.getDate()}日（${weekDays[selectedDate.getDay()]}）`;
-
-                    return (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: '40px' }}>
-                        <Typography>{dateString}</Typography>
-                        {selectedDate.getTime() === today.getTime() && (
-                          <Typography
-                            sx={{
-                              bgcolor: 'primary.main',
-                              color: 'white',
-                              px: 1,
-                              py: 0.5,
-                              borderRadius: 1,
-                              fontSize: '0.75rem',
-                              fontWeight: 'bold',
-                              ml: 1
-                            }}
-                          >
-                            本日
-                          </Typography>
-                        )}
-                      </Box>
-                    );
-                  })()}
-                </Box>
-
-                <Button
-                  onClick={(e) => {
-                    const newDate = new Date(date);
-                    newDate.setDate(newDate.getDate() + 1);
-                    setDate(newDate.toISOString().slice(0, 10));
-                    e.currentTarget.blur();
-                  }}
-                  sx={{
-                    bgcolor: '#f8f9fa',
-                    border: 1,
-                    borderColor: 'divider',
-                    borderRadius: '0 4px 4px 0',
-                    borderLeft: 0,
-                    minWidth: '50px',
-                    '&:hover': { bgcolor: '#e9ecef' },
-                    '&:focus': { outline: 'none' }
-                  }}
-                >
-                  <ChevronRightIcon />
-                </Button>
-              </Box>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                style={{ display: 'none' }}
-              />
-            </Stack>
+            <DateNavigator date={date} onDateChange={updateDate} />
 
             {err && (
               <Typography color="error" sx={{ mt: 1 }}>
@@ -730,29 +591,6 @@ export default function AdminHomePage() {
           変更が保存されていません
         </Alert>
       </Snackbar>
-
-      <Popover
-        open={calendarOpen}
-        anchorEl={anchorEl}
-        onClose={handleCalendarClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'center',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
-        sx={{ mt: 1 }}
-      >
-        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ja}>
-          <DateCalendar
-            value={new Date(date)}
-            onChange={handleDateChange}
-            sx={{ bgcolor: 'background.paper' }}
-          />
-        </LocalizationProvider>
-      </Popover>
     </Grid>
   );
 }
