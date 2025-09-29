@@ -123,5 +123,5 @@ export default function WageTable({
         </TableRow>
       </TableFooter>
     </Table>
-  )
+  );
 }
