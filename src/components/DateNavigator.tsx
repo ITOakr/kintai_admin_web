@@ -1,4 +1,5 @@
-// すでにログイン・adminチェックを通過している前提のメイン領域を差し替え
+// DateNavigator component: Provides UI controls for navigating and selecting dates.
+// Includes previous/next day navigation, a "today" button, and a popover calendar for date selection.
 import {  useState } from "react";
 import {
   Typography, Button,
