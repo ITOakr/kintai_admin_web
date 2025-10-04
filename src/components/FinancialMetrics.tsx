@@ -15,7 +15,27 @@ interface FinancialMetricsProps {
 }
 
 // L, F, FL比率を表示する部分をまとめた小さなコンポーネント
-const MetricDisplay = ({ title, value1Label, value1, value2Label, value2, ratioLabel, ratio, ratioColor }: any) => (
+interface MetricDisplayProps {
+  title: string;
+  value1Label: string;
+  value1: number | null | undefined;
+  value2Label: string;
+  value2: number | null | undefined;
+  ratioLabel: string;
+  ratio: number | null | undefined;
+  ratioColor: string;
+}
+
+const MetricDisplay = ({
+  title,
+  value1Label,
+  value1,
+  value2Label,
+  value2,
+  ratioLabel,
+  ratio,
+  ratioColor,
+}: MetricDisplayProps) => (
   <>
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
       <AssessmentIcon color="primary" sx={{ fontSize: 28 }} />
