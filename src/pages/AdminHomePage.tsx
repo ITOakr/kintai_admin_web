@@ -1,44 +1,24 @@
 // すでにログイン・adminチェックを通過している前提のメイン領域を差し替え
-import { useEffect, useMemo, useState } from "react";
-import { Form, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { getDailySummary, getFoodCosts, putSales, FoodCostItem, putFoodCosts, putDailyFixedCosts, DailySummary } from "../lib/api.ts";
 import SalesBreakdownChart from "../components/SalesBreakdownChart.tsx";
-import { Grid, Input, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Grid } from '@mui/material';
 import {
   Card, CardContent, CardActions,
-  Typography, TextField, Button, Divider,
-  Table, TableHead, TableRow, TableCell, TableBody, TableFooter,
-  Snackbar, Alert, Stack, IconButton, Box, Popover, InputAdornment
+  Typography, Button, Divider,
+  Snackbar, Alert, Box,
 } from "@mui/material";
-import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { ja } from "date-fns/locale/ja";
 import {
-  ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon,
   Refresh as RefreshIcon,
   People as PeopleIcon,
-  Paid as PaidIcon,
-  Assessment as AssessmentIcon,
   Warning as WarningIcon,
-  LocalPizza as LocalPizzaIcon,
-  FiberManualRecord as FiberManualRecordIcon,
-  AddCircleOutline as AddCircleOutlineIcon,
-  Delete as DeleteIcon
 } from "@mui/icons-material";
-import { formatYen, minutesToHM } from "../utils/formatters";
 import DateNavigator from "../components/DateNavigator";
 import WageTable from "../components/WageTable";
 import SalesInputForm from "../components/SalesInputForm";
 import FoodCostForm from "../components/FoodCostForm";
-
-const FOOD_CATEGORIES = {
-  meat: "肉類",
-  ingredient: "食材",
-  drink: "ドリンク",
-  other: "その他"
-};
+import FinancialMetrics from "../components/FinancialMetrics";
 
 export default function AdminHomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -68,9 +48,7 @@ export default function AdminHomePage() {
 
   // 食材費
   const [foodCostItems, setFoodCostItems] = useState<FoodCostItem[]>([]);
-  const totalFoodCosts = useMemo(() => {
-    return foodCostItems.reduce((sum, item) => sum + item.amount_yen, 0);
-  }, [foodCostItems]);
+  const totalFoodCosts = foodCostItems.reduce((sum, item) => sum + item.amount_yen, 0);
 
   // 編集状態の追跡
   const [isEdited, setIsEdited] = useState(false);
@@ -107,32 +85,6 @@ export default function AdminHomePage() {
     refreshAll(date);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
-
-  const handleFoodCostItemChange = (index: number, field: keyof FoodCostItem, value: string | number) => {
-    const newItems = [...foodCostItems];
-    let processedValue = value;
-    if (field === "amount_yen") {
-      // 全角数字を半角数字に変換
-      const normalized = String(value)
-        .replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
-        .replace(/[^0-9]/g, ''); // 数字以外の文字を除去
-      processedValue = normalized === "" ? 0 : Number(normalized);
-    }
-    (newItems[index] as any)[field] = processedValue;
-    setFoodCostItems(newItems);
-    setIsEdited(true);
-  };
-
-  const addFoodCostItem = () => {
-    setFoodCostItems([...foodCostItems, { category: "meat", amount_yen: 0, note: "" }]);
-    setIsEdited(true);
-  };
-
-  const removeFoodCostItem = (index: number) => {
-    const newItems = foodCostItems.filter((_, i) => i !== index);
-    setFoodCostItems(newItems);
-    setIsEdited(true);
-  };
 
   async function saveAll() {
     try {
@@ -237,129 +189,11 @@ export default function AdminHomePage() {
 
               <Divider sx={{ my: 2 }} />
 
-              <Stack spacing={4}>
-                {/* L比計算 */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <AssessmentIcon color="primary" sx={{ fontSize: 28 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    売上対人件費
-                  </Typography>
-                </Box>
+              <FinancialMetrics
+                dailySummary={dailySummary}
+                totalFoodCosts={totalFoodCosts}
+              />
 
-                <Box sx={{
-                  bgcolor: '#f8f9fa',
-                  p: 2,
-                  borderRadius: 1,
-                  border: 1,
-                  borderColor: 'divider'
-                }}>
-                  <Stack spacing={1.5}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ color: 'text.secondary' }}>売上：</Typography>
-                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {formatYen(dailySummary?.sales ?? 0)}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ color: 'text.secondary' }}>人件費：</Typography>
-                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {formatYen(dailySummary?.total_wage ?? 0)}
-                      </Typography>
-                    </Box>
-                    <Divider />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ color: 'text.secondary' }}>比率：</Typography>
-                      <Typography sx={{
-                        fontSize: '1.2rem',
-                        fontWeight: 'bold',
-                        color: dailySummary?.l_ratio && dailySummary?.l_ratio >= 0.3 ? 'error.main' : 'success.main'
-                      }}>
-                        {dailySummary?.l_ratio == null ? "-" : `${(dailySummary?.l_ratio * 100).toFixed(2)} %`}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <AssessmentIcon color="primary" sx={{ fontSize: 28 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    売上対食材費
-                  </Typography>
-                </Box>
-
-                <Box sx={{
-                  bgcolor: '#f8f9fa',
-                  p: 2,
-                  borderRadius: 1,
-                  border: 1,
-                  borderColor: 'divider'
-                }}>
-                  <Stack spacing={1.5}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ color: 'text.secondary' }}>売上：</Typography>
-                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {formatYen(dailySummary?.sales ?? 0)}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ color: 'text.secondary' }}>食材費：</Typography>
-                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {formatYen(totalFoodCosts ?? 0)}
-                      </Typography>
-                    </Box>
-                    <Divider />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ color: 'text.secondary' }}>比率：</Typography>
-                      <Typography sx={{
-                        fontSize: '1.2rem',
-                        fontWeight: 'bold',
-                        color: dailySummary?.f_ratio && dailySummary?.f_ratio >= 0.3 ? 'error.main' : 'success.main'
-                      }}>
-                        {dailySummary?.f_ratio == null ? "-" : `${(dailySummary?.f_ratio * 100).toFixed(2)} %`}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <AssessmentIcon color="primary" sx={{ fontSize: 28 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    FL比率
-                  </Typography>
-                </Box>
-
-                <Box sx={{
-                  bgcolor: '#f8f9fa',
-                  p: 2,
-                  borderRadius: 1,
-                  border: 1,
-                  borderColor: 'divider'
-                }}>
-                  <Stack spacing={1.5}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ color: 'text.secondary' }}>売上：</Typography>
-                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {formatYen(sales)}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ color: 'text.secondary' }}>食材費＋人件費：</Typography>
-                      <Typography sx={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                        {formatYen((totalFoodCosts ?? 0) + (dailySummary?.total_wage ?? 0))}
-                      </Typography>
-                    </Box>
-                    <Divider />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ color: 'text.secondary' }}>比率：</Typography>
-                      <Typography sx={{
-                        fontSize: '1.2rem',
-                        fontWeight: 'bold',
-                        color: dailySummary?.f_l_ratio && dailySummary?.f_l_ratio >= 0.6 ? 'error.main' : 'success.main'
-                      }}>
-                        {dailySummary?.f_l_ratio == null ? "-" : `${(dailySummary?.f_l_ratio * 100).toFixed(2)} %`}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Box>
-              </Stack>
             </CardContent>
             <CardActions sx={{ justifyContent: "flex-end" }}>
               <Button
