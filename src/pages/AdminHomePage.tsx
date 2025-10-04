@@ -31,6 +31,7 @@ import { formatYen, minutesToHM } from "../utils/formatters";
 import DateNavigator from "../components/DateNavigator";
 import WageTable from "../components/WageTable";
 import SalesInputForm from "../components/SalesInputForm";
+import FoodCostForm from "../components/FoodCostForm";
 
 const FOOD_CATEGORIES = {
   meat: "肉類",
@@ -225,74 +226,14 @@ export default function AdminHomePage() {
                 onNoteChange={setNote}
                 onEdit={() => setIsEdited(true)}
               />
-              
+
               <Divider sx={{ my: 2 }} />
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <LocalPizzaIcon color="primary" sx={{ fontSize: 28 }} />
-                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                  食材費入力
-                </Typography>
-              </Box>
-
-              <Stack spacing={2}>
-                {foodCostItems.map((item, index) => (
-                  <Box key={index} sx={{ border: '1px solid #e0e0e0', p: 1.5, borderRadius: 1 }}>
-                    <Stack spacing={1.5}>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <FormControl size="small" sx={{ minWidth: 120 }}>
-                          <InputLabel>カテゴリ</InputLabel>
-                          <Select
-                            value={item.category}
-                            label="カテゴリ"
-                            onChange={(e) => handleFoodCostItemChange(index, "category", e.target.value)}
-                          >
-                            {Object.entries(FOOD_CATEGORIES).map(([key, label]) => (
-                              <MenuItem key={key} value={key}>{label}</MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                        <TextField
-                          label="金額（円）"
-                          type="text"
-                          size="small"
-                          value={item.amount_yen}
-                          onChange={(e) => {
-                            handleFoodCostItemChange(index, "amount_yen", e.target.value);
-                          }}
-                          sx={{ flex: 1 }}
-                          slotProps={{
-                            input: {
-                              inputMode: "numeric"
-                            }
-                          }}
-                        />
-                        <IconButton
-                          onClick={() => removeFoodCostItem(index)}
-                          color="error"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Stack>
-                      <TextField
-                        label="メモ（任意）"
-                        size="small"
-                        value={item.note ?? ""}
-                        onChange={(e) => {
-                          handleFoodCostItemChange(index, "note", e.target.value);
-                        }}
-                        fullWidth
-                      />
-                    </Stack>
-                  </Box>
-                ))}
-                <Button startIcon={<AddCircleOutlineIcon />} onClick={addFoodCostItem}>
-                  項目を追加
-                </Button>
-                <Typography align="right" sx={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
-                  合計: {formatYen(totalFoodCosts)}
-                </Typography>
-              </Stack>
+              <FoodCostForm
+                items={foodCostItems}
+                onItemsChange={setFoodCostItems}
+                onEdit={() => setIsEdited(true)}
+              />
 
               <Divider sx={{ my: 2 }} />
 
