@@ -48,7 +48,20 @@ export default function FoodCostForm({ items, onItemsChange, onEdit }: FoodCostF
     }
 
     // 特定の項目の、特定のフィールドを新しい値で更新
-    (newItems[index] as any)[field] = processedValue;
+    switch (field) {
+      case "category":
+        newItems[index].category = processedValue as FoodCostItem["category"];
+        break;
+      case "amount_yen":
+        newItems[index].amount_yen = processedValue as FoodCostItem["amount_yen"];
+        break;
+      case "note":
+        newItems[index].note = processedValue as FoodCostItem["note"];
+        break;
+      default:
+        // Should never happen due to keyof FoodCostItem, but for safety:
+        throw new Error(`Unknown field: ${field}`);
+    }
 
     // 親コンポーネントに変更後の配列全体を通知
     onItemsChange(newItems);
