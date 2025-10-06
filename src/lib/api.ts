@@ -208,6 +208,7 @@ export interface MonthlySummaryResponse {
     f_ratio: number | null;
     f_l_ratio: number | null;
     cumulative_f_l_ratio: number | null;
+    last_year_cumulative_f_l_ratio: number | null;
   }>;
   monthly_sales: number;
   monthly_wage: number;
