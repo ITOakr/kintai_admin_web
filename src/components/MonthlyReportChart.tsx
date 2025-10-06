@@ -9,7 +9,7 @@ type SeriesItem = {
   data: (number | null)[];
   color: string;
   strokeDasharray?: string;
-  curve?: 'linear';
+  curve?: 'linear' | 'smooth' | 'step';
   valueFormatter: (value: number | null) => string;
 };
 
