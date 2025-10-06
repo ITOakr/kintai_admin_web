@@ -8,6 +8,8 @@ type SeriesItem = {
   label: string;
   data: (number | null)[];
   color: string;
+  strokeDasharray?: string;
+  curve?: 'linear' | 'smooth' | 'step';
   valueFormatter: (value: number | null) => string;
 };
 
@@ -24,6 +26,7 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
     lRatio: true,
     flRatio: true,
     cumulativeFLRatio: true,
+    lastYearCumulativeFLRatio: false,
   });
 
 
@@ -38,6 +41,9 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
     const lRatioData = data.days.map(day => day.l_ratio ? day.l_ratio * 100 : null);
     const flRatioData = data.days.map(day => day.f_l_ratio ? day.f_l_ratio * 100 : null);
     const cumulativeFLRatioData = data.days.map(day => day.cumulative_f_l_ratio ? day.cumulative_f_l_ratio * 100 : null);
+    const lastYearCumulativeFLRatioData = data.days.map(day =>
+      day.last_year_cumulative_f_l_ratio ? day.last_year_cumulative_f_l_ratio * 100 : null
+    );
 
     const series: SeriesItem[] = [];
     if (visibleSeries.fRatio) series.push(
@@ -45,6 +51,7 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
         label: 'F比率',
         data: fRatioData,
         color: '#fbc02d',
+        curve: "linear",
         valueFormatter: (v) => v ? `${v.toFixed(2)}%` : ''
       });
     if (visibleSeries.lRatio) series.push(
@@ -52,6 +59,7 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
         label: 'L比率',
         data: lRatioData,
         color: '#1976d2',
+        curve: "linear",
         valueFormatter: (v) => v ? `${v.toFixed(2)}%` : ''
       });
     if (visibleSeries.flRatio) series.push(
@@ -59,6 +67,7 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
         label: 'FL比率',
         data: flRatioData,
         color: '#4caf50',
+        curve: "linear",
         valueFormatter: (v) => v ? `${v.toFixed(2)}%` : ''
       });
     if (visibleSeries.cumulativeFLRatio) series.push(
@@ -66,6 +75,16 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
         label: '累積FL比率',
         data: cumulativeFLRatioData,
         color: '#ef5350',
+        curve: "linear",
+        valueFormatter: (v) => v ? `${v.toFixed(2)}%` : ''
+      });
+    if (visibleSeries.lastYearCumulativeFLRatio) series.push(
+      {
+        label: '去年の累積FL比率',
+        data: lastYearCumulativeFLRatioData,
+        color: '#ff9800',
+        strokeDasharray: '5 5',
+        curve: "linear",
         valueFormatter: (v) => v ? `${v.toFixed(2)}%` : ''
       });
 
@@ -91,11 +110,11 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
     const updateAxisLabelColors = () => {
       // 複数のセレクターを試す
       let tickLabels = chartRef.current?.querySelectorAll('.MuiChartsAxis-bottom .MuiChartsAxis-tickLabel');
-      
+
       if (!tickLabels || tickLabels.length === 0) {
         tickLabels = chartRef.current?.querySelectorAll('.MuiChartsAxis-tickLabel');
       }
-      
+
       if (!tickLabels || tickLabels.length === 0) {
         tickLabels = chartRef.current?.querySelectorAll('text');
       }
@@ -107,25 +126,25 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
 
       tickLabels.forEach((label, index) => {
         const textContent = (label as SVGTextElement).textContent;
-        
+
         // X軸のラベル（数字＋"日"）かどうかを判定
         if (textContent && textContent.includes('日') && index < seriesData.dayOfWeekData.length) {
           const currentFill = (label as SVGTextElement).getAttribute('fill');
           const dayOfWeek = seriesData.dayOfWeekData[index];
-          
+
           // 実際の日付を取得してデバッグ
           const dayNumber = parseInt(textContent.replace('日', ''));
           const actualDate = data?.days?.find(d => new Date(d.date).getDate() === dayNumber);
           const actualDayOfWeek = actualDate ? new Date(actualDate.date).getDay() : null;
-          
-          
+
+
           let targetColor = '#000000'; // 平日は黒色
           if (actualDayOfWeek === 0) { // Sunday
             targetColor = '#ef5350'; // 赤色
           } else if (actualDayOfWeek === 6) { // Saturday
             targetColor = '#1976d2'; // 青色
           }
-          
+
           // 色が既に正しく設定されている場合はスキップ
           if (currentFill !== targetColor) {
             // 複数の方法でスタイルを適用して確実に色を変更
@@ -133,14 +152,14 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
             (label as SVGTextElement).style.setProperty('fill', targetColor, 'important');
             (label as SVGTextElement).style.setProperty('color', targetColor, 'important');
             (label as SVGTextElement).style.setProperty('--weekend-color', targetColor);
-            
+
             // SVG専用の属性も設定
             (label as SVGTextElement).setAttribute('style', `fill: ${targetColor} !important; color: ${targetColor} !important;`);
-            
+
             // クラス名も追加
             (label as SVGTextElement).classList.add('custom-weekend-color');
             (label as SVGTextElement).setAttribute('data-weekend-color', targetColor);
-            
+
           } else {
             colorAlreadySet = true;
           }
@@ -212,6 +231,10 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
             control={<Checkbox checked={visibleSeries.cumulativeFLRatio} onChange={handleSeriesToggle} name="cumulativeFLRatio" sx={{ color: '#ef5350', '&.Mui-checked': { color: '#ef5350' } }} />}
             label="累積FL比率"
           />
+          <FormControlLabel
+            control={<Checkbox checked={visibleSeries.lastYearCumulativeFLRatio} onChange={handleSeriesToggle} name="lastYearCumulativeFLRatio" sx={{ color: '#ff9800', '&.Mui-checked': { color: '#ff9800' } }} />}
+            label="去年の累積FL比率"
+          />
         </FormGroup>
         <Box ref={chartRef} sx={{ width: '100%' }}>
           <LineChart
@@ -240,7 +263,7 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
                 color: '#ef5350 !important'
               },
               '& text[data-weekend-color="#1976d2"]': {
-                fill: '#1976d2 !important', 
+                fill: '#1976d2 !important',
                 color: '#1976d2 !important'
               },
               // より具体的なセレクター
