@@ -136,6 +136,28 @@ export async function putFoodCosts(date: string, foodCostItems: FoodCostItem[]) 
   });
 }
 
+// 日報データの型定義
+export interface DailyReport {
+  id?: number;
+  date: string;
+  content: string | null;
+}
+
+// 日報を取得するAPI関数
+export async function getDailyReport(date: string) {
+  return apiRequest<DailyReport>(`/v1/daily_report?date=${date}`);
+}
+
+// 日報を保存（作成/更新）するAPI関数
+export async function putDailyReport(date: string, content: string) {
+  const body = new URLSearchParams({ content });
+  return apiRequest<DailyReport>(`/v1/daily_report?date=${date}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+    body,
+  });
+}
+
 export async function putDailyFixedCosts(date: string, employeeCount: number) {
   const body = new URLSearchParams({ full_time_employee_count: String(employeeCount) });
   return apiRequest<any>(`/v1/daily_fixed_costs?date=${date}`, {
