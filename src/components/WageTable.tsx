@@ -44,7 +44,7 @@ export default function WageTable({
           <TableCell align="right">休憩</TableCell>
           <TableCell align="right">深夜</TableCell>
           <TableCell align="right">基本時給</TableCell>
-          <TableCell align="right" sx={{ backgroundColor: '#f8f9fa' }}>日額人件費</TableCell>
+          <TableCell align="right" sx={{ backgroundColor: '#f8f9fa' }}>人件費</TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
