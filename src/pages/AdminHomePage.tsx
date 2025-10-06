@@ -1,7 +1,7 @@
 // すでにログイン・adminチェックを通過している前提のメイン領域を差し替え
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { getDailySummary, getFoodCosts, putSales, FoodCostItem, putFoodCosts, putDailyFixedCosts, DailySummary } from "../lib/api.ts";
+import { getDailySummary, getFoodCosts, putSales, FoodCostItem, putFoodCosts, putDailyFixedCosts, DailySummary, getDailyReport, putDailyReport } from "../lib/api.ts";
 import SalesBreakdownChart from "../components/SalesBreakdownChart.tsx";
 import { Grid } from '@mui/material';
 import {
@@ -12,10 +12,12 @@ import {
 import {
   Refresh as RefreshIcon,
   People as PeopleIcon,
+  Create as CreateIcon,
   Warning as WarningIcon,
 } from "@mui/icons-material";
 import DateNavigator from "../components/DateNavigator";
 import WageTable from "../components/WageTable";
+import DailyReportForm from "../components/DailyReportForm";
 import SalesInputForm from "../components/SalesInputForm";
 import FoodCostForm from "../components/FoodCostForm";
 import FinancialMetrics from "../components/FinancialMetrics";
@@ -42,6 +44,8 @@ export default function AdminHomePage() {
 
   const [dailySummary, setDailySummary] = useState<DailySummary | null>(null);
 
+  const [dailyReport, setDailyReport] = useState("");
+
   // 売上
   const [sales, setSales] = useState<number | null>(null);
   const [note, setNote] = useState<string>("");
@@ -60,8 +64,9 @@ export default function AdminHomePage() {
       setLoading(true);
       setErr(null);
 
-      const [apiResults] = await Promise.all([
+      const [apiResults, reportResult] = await Promise.all([
         getDailySummary(d),
+        getDailyReport(d),
         new Promise(resolve => setTimeout(resolve, 300)) // 最低待機時間300ms
       ]);
 
@@ -69,6 +74,7 @@ export default function AdminHomePage() {
       setSales(apiResults.sales ?? null);
       setNote(apiResults.sales_note ?? "");
       setEmployeeCount(apiResults.full_time_employee_count ?? 1);
+      setDailyReport(reportResult.content ?? "");
       const foodCosts = await getFoodCosts(d);
       setFoodCostItems(foodCosts);
 
@@ -95,7 +101,8 @@ export default function AdminHomePage() {
       await Promise.all([
         putSales(date, Number(sales ?? 0), note || undefined),
         putFoodCosts(date, foodCostItems),
-        putDailyFixedCosts(date, employeeCount)
+        putDailyFixedCosts(date, employeeCount),
+        putDailyReport(date, dailyReport)
       ]);
 
       // 2. 両方の保存が成功したら、すべてのデータを再取得して画面を完全に同期させる
@@ -150,6 +157,16 @@ export default function AdminHomePage() {
               dailySummary={dailySummary}
               employeeCount={employeeCount}
               onEmployeeCountChange={setEmployeeCount}
+              onEdit={() => setIsEdited(true)}
+            />
+          </CardContent>
+        </Card>
+
+        <Card elevation={6} sx={{ mt: 2, boxShadow: '0 8px 16px rgba(0,0,0,0.1)' }}>
+          <CardContent>
+            <DailyReportForm
+              report={dailyReport}
+              onReportChange={setDailyReport}
               onEdit={() => setIsEdited(true)}
             />
           </CardContent>
