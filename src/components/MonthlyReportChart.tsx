@@ -1,5 +1,5 @@
 import { Box, Card, CardContent, Typography, FormGroup, FormControlLabel, Checkbox } from '@mui/material';
-import { LineChart, ChartsReferenceLine } from '@mui/x-charts';
+import { LineChart, ChartsReferenceLine, LineSeriesType } from '@mui/x-charts';
 import { MonthlySummaryResponse } from '../lib/api';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +9,7 @@ type SeriesItem = {
   data: (number | null)[];
   color: string;
   strokeDasharray?: string;
-  curve?: 'linear' | 'smooth' | 'step';
+  curve?: LineSeriesType['curve'];
   valueFormatter: (value: number | null) => string;
 };
 
@@ -247,7 +247,7 @@ export default function MonthlyReportChart({ data }: MonthlyReportChartProps) {
             yAxis={[{
               max: seriesData.yAxisMax,
               min: 0,
-              valueFormatter: (value) => `${value}%`,
+              valueFormatter: (value: number) => `${value}%`,
             }]}
             series={seriesData.series}
             sx={{
