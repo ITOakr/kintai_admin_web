@@ -64,9 +64,10 @@ export default function AdminHomePage() {
       setLoading(true);
       setErr(null);
 
-      const [apiResults, reportResult] = await Promise.all([
+      const [apiResults, reportResult, foodCosts] = await Promise.all([
         getDailySummary(d),
         getDailyReport(d),
+        getFoodCosts(d),
         new Promise(resolve => setTimeout(resolve, 300)) // 最低待機時間300ms
       ]);
 
@@ -75,7 +76,6 @@ export default function AdminHomePage() {
       setNote(apiResults.sales_note ?? "");
       setEmployeeCount(apiResults.full_time_employee_count ?? 1);
       setDailyReport(reportResult.content ?? "");
-      const foodCosts = await getFoodCosts(d);
       setFoodCostItems(foodCosts);
 
       setIsEdited(false);

@@ -31,6 +31,7 @@ function Sidebar({ onLogout, unreadCount }: { onLogout: () => void; unreadCount:
   const location = useLocation();
 
   return (
+    // サイドバーMUI Drawerを使用
     <Drawer
       variant="permanent"
       sx={{
@@ -43,7 +44,8 @@ function Sidebar({ onLogout, unreadCount }: { onLogout: () => void; unreadCount:
         },
       }}
     >
-      <Toolbar />
+      {/* サイドバーのコンテンツ */}
+      <Toolbar /> {/* ヘッダーの高さ分の余白 */}
       <Box sx={{ overflow: 'auto' }}>
         <List>
           <ListItem disablePadding>
@@ -173,6 +175,7 @@ function Sidebar({ onLogout, unreadCount }: { onLogout: () => void; unreadCount:
   );
 }
 
+// ヘッダーのコンテンツを分離
 function HeaderContent() {
   const location = useLocation();
 
@@ -207,11 +210,12 @@ function HeaderContent() {
   );
 }
 
+// ルーティングガードコンポーネント
 function AdminRoute({ role }: { role: Role }) {
   if (role !== "admin") {
     return <Navigate to="/auth-error" replace />;
   }
-  return <Outlet />;
+  return <Outlet />; // 子コンポーネントをレンダリング
 }
 
 // 権限エラーページを独立したコンポーネントとして定義
@@ -233,13 +237,19 @@ function AuthErrorPage({ onLogout }: { onLogout: () => void }) {
   );
 }
 
+
 export default function App() {
+  // トークンを記憶
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
+  // ユーザーの権限を記憶
   const [role, setRole] = useState<Role>(null);
+  // 権限をチェック中かどうか
   const [loadingRole, setLoadingRole] = useState(true);
+  // 認証エラーメッセージ
   const [authErr, setAuthErr] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0); // 未読通知数の状態
 
+  // 通知を取得する関数をuseCallbackでメモ化
   const fetchNotifications = useCallback(async () => {
     if (!token || role !== 'admin') {
       return;
@@ -249,12 +259,12 @@ export default function App() {
       const unreadNotifications = allNotifications.filter(n => !n.read);
       setUnreadCount(unreadNotifications.length);
     } catch (error) {
-      console.error("Failed to fetch notifications:", error);
     }
   }, [token, role]);
 
   // /auth/me でrole取得
   useEffect(() => {
+    // tokenがない場合はroleをnullにして終了
     if (!token) {
       setRole(null);
       setLoadingRole(false);
@@ -286,15 +296,17 @@ export default function App() {
     return () => clearInterval(interval); // コンポーネントが不要になったらタイマーを解除
   }, [fetchNotifications, token, role]);
 
+  // ログイン成功時の処理
   function handleLoginSuccess(newToken: string) {
-    localStorage.setItem("token", newToken);
-    setToken(newToken);
+    localStorage.setItem("token", newToken); // トークンをローカルストレージに保存
+    setToken(newToken); // トークンを状態に保存
     setAuthErr(null);
   }
 
+  // ログアウト処理
   function logout() {
-    localStorage.removeItem("token");
-    setToken(null);
+    localStorage.removeItem("token"); // ローカルストレージからトークンを削除
+    setToken(null); // 状態からトークンを削除
     setRole(null);
   }
 
@@ -308,6 +320,7 @@ export default function App() {
 
   // 未ログイン：ログインカードを表示
   return (
+    // ルーティングを有効にするためにBrowserRouterで全体をラップ
     <BrowserRouter>
       <Box sx={{
         display: 'flex',
@@ -356,12 +369,13 @@ export default function App() {
                 </Box>
               </Toolbar>
             </AppBar>
+            {/* サイドバー */}
             <Sidebar onLogout={logout} unreadCount={unreadCount} />
           </>
         )}
 
         <Box component="main" sx={{
-          flexGrow: 1,
+          flexGrow: 1, // メインコンテンツが余白を埋めるように
           display: 'flex',
           flexDirection: 'column',
           marginLeft: token && role === "admin" ? '240px' : 0,
@@ -387,7 +401,7 @@ export default function App() {
               <Route path="/notifications" element={<NotificationPage onNotificationRead={fetchNotifications} />} />
             </Route>
 
-            {/* 未ログイン時は/loginへ、ログイン済みで見つからないページは/へ */}
+            {/* トークンがない場合はログインページへリダイレクト，トークンがあればホームへ */}
             <Route path="*" element={<Navigate to={token ? "/" : "/login"} replace />} />
           </Routes>
         </Box>

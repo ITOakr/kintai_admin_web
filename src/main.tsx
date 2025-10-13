@@ -15,6 +15,7 @@ import "@fontsource/roboto/700.css";
 import "@fontsource/noto-sans-jp/400.css"; // Regular
 import "@fontsource/noto-sans-jp/700.css"; // Bold
 
+// MUIのテーマをカスタマイズ
 const theme = createTheme({
   palette: {
     mode: "light",
@@ -33,6 +34,7 @@ const theme = createTheme({
   jaJP,
 );
 
+// index.html の <div id="root"> に React アプリをマウント
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
